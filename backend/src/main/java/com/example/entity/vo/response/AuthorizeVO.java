@@ -6,7 +6,7 @@ import java.util.Date;
 
 /**
  * @author Ll
- * @description: TODO
+ * @description: 用户验证
  * @date 2024/7/11 下午3:27
  */
 @Data

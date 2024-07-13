@@ -6,7 +6,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 /**
  * @author Ll
- * @description: TODO
+ * @description: 加密
  * @date 2024/7/12 上午10:43
  */
 @Configuration
