@@ -1,0 +1,48 @@
+#生产环境配置
+server:
+  port: 80
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+spring:
+  mail:
+    host: smtp.163.com
+    username: Javastudy1@163.com
+    password: YUVRVNKZTTIUMADI
+    port: 465
+    protocol: smtp
+    default-encoding: utf-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            enable: true
+          socketFactory:
+            port: 465
+            class: javax.net.ssl.SSLSocketFactory
+  rabbitmq:
+    addresses: 47.97.2.37
+    username: rabbitmq
+    password: rabbitmq
+    virtual-host: /
+  data:
+    redis:
+      database: 0
+      host: 47.97.2.37
+      username: default
+      password: redis_HrDCXN
+      port: 6379
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: mysql_QR62KR
+    url: jdbc:mysql://47.97.2.37:3306/Forum
+  web:
+    cors:
+      origin: '*'
+      credentials: false
+      methods: '*'

@@ -9,6 +9,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -23,6 +24,7 @@ import java.io.PrintWriter;
  * @date 2024/7/14 上午11:15
  */
 @Component
+@Slf4j
 @Order(Const.ORDER_LIMIT)
 public class FlowLimitFilter extends HttpFilter {
 
@@ -46,6 +48,7 @@ public class FlowLimitFilter extends HttpFilter {
         else
             chain.doFilter(request, response);
     }
+
     /**
      * @description: 限制访问
      * @param: [response]

@@ -6,7 +6,7 @@ import java.util.function.Consumer;
 
 /**
  * @author Ll
- * @description:
+ * @description: 用于DTO快速转换VO实现，只需将DTO类继承此类即可使用
  * @date 2024/7/12 下午12:40
  */
 public interface BaseData {

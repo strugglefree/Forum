@@ -2,10 +2,13 @@ package com.example.entity;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.alibaba.fastjson2.JSONWriter;
+import org.slf4j.MDC;
 
-public record RestBean<T>(int code , T data , String message) {
+import java.util.Optional;
+
+public record RestBean<T>(long id ,int code , T data , String message) {
     public static <T> RestBean<T> success(T data) {
-        return new RestBean<T>(200 , data , "请求成功");
+        return new RestBean<T>(requestId(),200 , data , "请求成功");
     }
 
     public static <T> RestBean<T> success() {
@@ -13,7 +16,7 @@ public record RestBean<T>(int code , T data , String message) {
     }
 
     public static <T> RestBean<T> failure(int code,String message) {
-        return new RestBean<T>(code, null , message);
+        return new RestBean<T>(requestId() , code, null , message);
     }
 
     public static <T> RestBean<T> unauthorized(String message) {
@@ -26,5 +29,9 @@ public record RestBean<T>(int code , T data , String message) {
 
     public String asJsonString() {
         return JSONObject.toJSONString(this, JSONWriter.Feature.WriteNulls);
+    }
+    private static long requestId(){
+        String requestId = Optional.ofNullable(MDC.get("reqId")).orElse("0");
+        return Long.parseLong(requestId);
     }
 }

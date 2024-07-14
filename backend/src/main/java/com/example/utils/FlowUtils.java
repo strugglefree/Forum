@@ -1,6 +1,7 @@
 package com.example.utils;
 
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +14,7 @@ import java.util.concurrent.TimeUnit;
  * @date 2024/7/13 上午9:38
  */
 @Component
+@Slf4j
 public class FlowUtils {
 
     @Resource

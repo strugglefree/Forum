@@ -17,4 +17,11 @@ public class Const {
 
     public static final int ORDER_CORE = -102; //跨域请求的顺序
     public static final int ORDER_LIMIT = -101;
+
+    //请求自定义属性
+    public final static String ATTR_USER_ID = "userId";
+    //消息队列
+    public final static String MQ_MAIL = "mail";
+    //用户角色
+    public final static String ROLE_DEFAULT = "user";
 }
