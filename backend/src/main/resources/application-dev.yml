@@ -1,6 +1,4 @@
 # 开发环境配置
-springdoc:
-  paths-to-match: /api/**
 spring:
   mail:
     host: smtp.163.com
