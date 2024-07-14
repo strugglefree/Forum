@@ -3,7 +3,9 @@ package com.example.service.impl;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.entity.dto.Account;
+import com.example.entity.vo.request.ConfirmResetVO;
 import com.example.entity.vo.request.EmailRegisterVO;
+import com.example.entity.vo.request.EmailResetVO;
 import com.example.mapper.AccountMapper;
 import com.example.service.AccountService;
 import com.example.utils.Const;
@@ -110,20 +112,56 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
     @Override
     public String registerEmailAccount(EmailRegisterVO vo) {
         String email = vo.getEmail();
-        String key = Const.VERIFY_EMAIL_DATA + email;
         String username = vo.getUsername();
-        String code = stringRedisTemplate.opsForValue().get(key);//Redis存储的验证码
+        String code = this.getEmailCode(email);
         if(code == null){ return "请先获取验证码"; }
         if(!code.equals(vo.getCode())) return "验证码错误，请重新输入";
         if(this.existEmail(email)) return "该邮箱已被注册，请更换一个邮箱";
-        if(this.existEmail(username)) return "该用户名已被使用，请重新输入";
+        if(this.existUsername(username)) return "该用户名已被使用，请重新输入";
         String password = passwordEncoder.encode(vo.getPassword());
         Account account = new Account(null, username, password, email, "user", new Date());
         if(this.save(account)) {
-            stringRedisTemplate.delete(key);//删除Redis存储的验证码
+            this.deleteEmailCode(email);//删除Redis存储的验证码
             return null;
         }
         else return "内部错误，请联系管理员";
+    }
+
+    /**
+     * @description: 重置密码第一步：验证邮箱
+     * @param: [vo]
+     * @return: java.lang.String
+     * @author Ll
+     * @date: 2024/7/14 上午8:56
+     */
+    @Override
+    public String resetConfirm(ConfirmResetVO vo) {
+        String email = vo.getEmail();
+        String code = this.getEmailCode(email);
+        if(code == null) return "请先获取验证码";
+        if(!code.equals(vo.getCode())) return "验证码错误，请重新输入";
+        return null;
+    }
+
+    /**
+     * @description: 重置密码第二步：重新填写对应的账户的密码
+     * @param: [vo]
+     * @return: java.lang.String
+     * @author Ll
+     * @date: 2024/7/14 上午8:56
+     */
+    @Override
+    public String resetAccountEmailPassword(EmailResetVO vo) {
+        String email = vo.getEmail();
+        String code = vo.getCode();
+        String password = passwordEncoder.encode(vo.getPassword());
+        String confirm = this.resetConfirm(new ConfirmResetVO(email, code));
+        if(confirm != null) return confirm;
+        boolean update = this.update().eq("email", email).set("password", password).update();
+        if(update) {
+            this.deleteEmailCode(email);
+        }
+        return update ? null : "更新失败，请联系管理员";
     }
 
     /**
@@ -137,6 +175,31 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
         String key = Const.VERIFY_EMAIL_LIMIT + ip;
         return flowUtils.limitOnceCheck(key,60);
     }
+
+    /**
+     * @description: 删除邮件验证码
+     * @param: [email]
+     * @return: void
+     * @author Ll
+     * @date: 2024/7/14 上午9:17
+     */
+    private void deleteEmailCode(String email){
+        String key = Const.VERIFY_EMAIL_DATA + email;
+        stringRedisTemplate.delete(key);
+    }
+
+    /**
+     * @description: 获取邮件验证码
+     * @param: [email]
+     * @return: java.lang.String
+     * @author Ll
+     * @date: 2024/7/14 上午9:12
+     */
+    private String getEmailCode(String email){
+        String key = Const.VERIFY_EMAIL_DATA + email;
+        return stringRedisTemplate.opsForValue().get(key);
+    }
+
 /**
  * @description: 邮箱是否已被注册
  * @param: [email]

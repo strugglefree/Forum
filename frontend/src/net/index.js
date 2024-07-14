@@ -15,8 +15,8 @@ const defaultError = (error) => {
 }
 
 const defaultFailure = (message, status, url) => {
-    console.warn(`请求地址: ${url}, 状态码: ${status}, 错误信息: ${message}`)
     ElMessage.warning(message)
+    console.log(`请求地址: ${url},状态码: ${status},错误信息:${message}`)
 }
 
 function takeAccessToken() {
