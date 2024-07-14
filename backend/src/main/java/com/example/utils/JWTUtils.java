@@ -34,6 +34,9 @@ public class JWTUtils {
     private int expire;
     @Resource
     StringRedisTemplate template;
+
+    @Resource
+    FlowUtils utils;
 /**
  * @description:  是不是有效的jwt
  * @param: [token]
@@ -171,5 +174,10 @@ public class JWTUtils {
                 .password("******")
                 .authorities(claims.get("authorities").asArray(String.class))
                 .build();
+    }
+
+    private boolean frequencyCheck(int userId){
+        String key = Const.JWT_FREQUENCY + userId;
+        return utils.limitOnceUpgradeCheck(key, 30, 10, 300);
     }
 }

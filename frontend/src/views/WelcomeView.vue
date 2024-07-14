@@ -15,9 +15,9 @@
       </div>
     </div>
     <router-view v-slot="{ Component }">
-       <transition name="el-fade-in-linear" mode="out-in">
-         <component :is="Component"/>
-       </transition>
+      <transition name="el-fade-in-linear" mode="out-in">
+        <component :is="Component"/>
+      </transition>
     </router-view>
   </div>
 </template>
@@ -25,9 +25,10 @@
 <style scoped>
 .welcome-title{
   position: absolute;
-  bottom: 2%;
-  left:1.5%;
+  bottom: 30px;
+  left: 30px;
   color: white;
   text-shadow: 0 0 10px black;
 }
+
 </style>
