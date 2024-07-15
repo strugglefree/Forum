@@ -165,6 +165,18 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
     }
 
     /**
+     * @description: 根据用户ID查找对应用户
+     * @param: [id]
+     * @return: com.example.entity.dto.Account
+     * @author Ll
+     * @date: 2024/7/15 上午9:51
+     */
+    @Override
+    public Account findAccountById(int id) {
+        return this.query().eq("id", id).one();
+    }
+
+    /**
      * @description: 通过ip来限制验证码的获取
      * @param: [ip]
      * @return: boolean
