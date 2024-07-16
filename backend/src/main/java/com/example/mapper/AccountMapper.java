@@ -6,7 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 
 /**
  * @author Ll
- * @description: mapper
+ * @description: 账户基本信息mapper
  * @date 2024/7/12 上午9:37
  */
 @Mapper

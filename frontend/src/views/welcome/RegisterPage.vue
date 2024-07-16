@@ -40,7 +40,7 @@ const formRef = ref();
 const rules = {
   username: [
     { validator: validateUsername, trigger: ['blur', 'change'] },
-    { min: 2, max: 8, message: '用户名的长度必须在2-8个字符之间', trigger: ['blur', 'change'] },
+    { min: 2, max: 10, message: '用户名的长度必须在2-8个字符之间', trigger: ['blur', 'change'] },
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },

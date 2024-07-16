@@ -6,6 +6,7 @@ import com.example.entity.dto.Account;
 import com.example.entity.vo.request.ConfirmResetVO;
 import com.example.entity.vo.request.EmailRegisterVO;
 import com.example.entity.vo.request.EmailResetVO;
+import com.example.entity.vo.request.ModifyEmailVO;
 import com.example.mapper.AccountMapper;
 import com.example.service.AccountService;
 import com.example.utils.Const;
@@ -162,6 +163,32 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
             this.deleteEmailCode(email);
         }
         return update ? null : "更新失败，请联系管理员";
+    }
+
+    /**
+     * @description: 更改邮箱验证验证码
+     * @param: [id, vo]
+     * @return: java.lang.String
+     * @author Ll
+     * @date: 2024/7/16 下午2:35
+     */
+    @Override
+    public String modifyEmail(int id, ModifyEmailVO vo) {
+        String email = vo.getEmail();
+        String code = this.getEmailCode(email);
+        if(code == null){
+            return "请先获取验证码";
+        }
+        if(!code.equals(vo.getCode())){
+            return "验证码错误，请重新输入";
+        }
+        this.deleteEmailCode(email);
+        Account account = this.findAccountByUsernameOrEmail(email);
+        if(account != null && account.getId() != id){
+            return "该邮箱已被别人注册，请更换其他电子邮箱";
+        }
+        this.update().eq("id", id).set("email", email).update();
+        return null;
     }
 
     /**
