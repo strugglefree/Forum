@@ -3,10 +3,7 @@ package com.example.service.impl;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.entity.dto.Account;
-import com.example.entity.vo.request.ConfirmResetVO;
-import com.example.entity.vo.request.EmailRegisterVO;
-import com.example.entity.vo.request.EmailResetVO;
-import com.example.entity.vo.request.ModifyEmailVO;
+import com.example.entity.vo.request.*;
 import com.example.mapper.AccountMapper;
 import com.example.service.AccountService;
 import com.example.utils.Const;
@@ -189,6 +186,26 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
         }
         this.update().eq("id", id).set("email", email).update();
         return null;
+    }
+
+    /**
+     * @description: 更改用户密码
+     * @param: [id, vo]
+     * @return: java.lang.String
+     * @author Ll
+     * @date: 2024/7/16 下午6:02
+     */
+    @Override
+    public String changePassword(int id, ChangePasswordVO vo) {
+        String password = this.query().eq("id",id).one().getPassword();
+        if(!passwordEncoder.matches(vo.getPast_password(), password)){
+            return "原密码错误，请核对后重新输入";
+        }
+        boolean update = this.update()
+                .eq("id", id)
+                .set("password", this.passwordEncoder.encode(vo.getNew_password()))
+                .update();
+        return update ? null : "未知错误，请联系管理员";
     }
 
     /**

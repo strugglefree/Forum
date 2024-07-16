@@ -16,6 +16,7 @@ import {
   Search,
   Notebook, Film, UserFilled, Tools, Lock, Position, Operation, Message, Back
 } from "@element-plus/icons-vue";
+import {ElMessage} from "element-plus";
 
 const loading = ref(true)
 const searchInput = reactive({
@@ -29,7 +30,10 @@ get('api/user/info',(data)=>{
   loading.value = false
 })
 function userLogout(){
-  logout(()=>{router.push('/')})
+  logout(()=>{
+    router.push('/')
+    ElMessage.success(`退出登录成功，欢迎您再次使用`)
+  })
 }
 </script>
 
@@ -167,7 +171,7 @@ function userLogout(){
                     个人信息设置
                   </template>
                 </el-menu-item>
-                <el-menu-item>
+                <el-menu-item index="/index/privacy-setting">
                   <template #title>
                     <el-icon><Lock /></el-icon>
                     账号安全设置

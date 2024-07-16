@@ -120,7 +120,7 @@ function modifyEmail(){
 </script>
 
 <template>
-  <div style="display: flex">
+  <div style="display: flex;max-width: 1100px;margin: auto">
     <div class="settings-left">
       <card :icon="User" title="账号信息设置" desc="在这里编辑您的个人信息，您可以在隐私设置中选择是否展示这些信息" v-loading="loading.form">
         <el-form style="margin: 0 10px 10px 10px" label-position="top" :model="baseForm" :rules="rules" ref="baseFormRef">
@@ -198,8 +198,8 @@ function modifyEmail(){
 
 <style scoped>
 .settings-left{
-  flex: 1;
   margin: 20px;
+  flex: 1;
 }
 
 .settings-right{

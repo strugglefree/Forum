@@ -6,7 +6,7 @@ import com.example.entity.vo.request.DetailsSaveVO;
 
 /**
  * @author Ll
- * @description: TODO
+ * @description: 个人信息功能接口
  * @date 2024/7/16 上午9:27
  */
 public interface AccountDetailsService extends IService<AccountDetails> {
