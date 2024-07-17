@@ -93,7 +93,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
             Random random = new Random();
             int code = random.nextInt(89999) + 100000;
             Map<String,Object> data = Map.of("type",type,"email",email,"code",code);
-            template.convertAndSend("mail",data);
+            template.convertAndSend(Const.MQ_MAIL,data);
             stringRedisTemplate.opsForValue()
                     .set(Const.VERIFY_EMAIL_DATA + email,String.valueOf(code),3, TimeUnit.MINUTES);
             return null;
@@ -117,7 +117,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
         if(this.existEmail(email)) return "该邮箱已被注册，请更换一个邮箱";
         if(this.existUsername(username)) return "该用户名已被使用，请重新输入";
         String password = passwordEncoder.encode(vo.getPassword());
-        Account account = new Account(null, username, password, email, "user", new Date());
+        Account account = new Account(null, username, password, email, Const.ROLE_DEFAULT, new Date());
         if(this.save(account)) {
             this.deleteEmailCode(email);//删除Redis存储的验证码
             return null;

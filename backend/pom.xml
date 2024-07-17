@@ -101,6 +101,12 @@
             <artifactId>java-jwt</artifactId>
             <version>4.3.0</version>
         </dependency>
+        <!--     minio框架     -->
+        <dependency>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
+            <version>8.5.11</version>
+        </dependency>
     </dependencies>
 
     <profiles>

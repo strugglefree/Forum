@@ -3,7 +3,7 @@
 import Card from "@/components/Card.vue";
 import {Hide, Setting, Lock, Unlock, Check, RefreshRight} from "@element-plus/icons-vue";
 import {reactive, ref} from "vue";
-import {post, logout} from "@/net";
+import {post, logout, get} from "@/net";
 import {ElMessage} from "element-plus";
 import router from "@/router";
 
@@ -47,18 +47,45 @@ function resetPassword(){
     }
   })
 }
+
+const saving = ref(true)
+const privacy = reactive({
+  phone: false,
+  email: false,
+  wechat: false,
+  qq: false,
+  gender: false
+})
+get('/api/user/privacy',(data) => {
+  privacy.phone = data.phone
+  privacy.email = data.email
+  privacy.wechat = data.wx
+  privacy.qq = data.qq
+  privacy.gender = data.gender
+  saving.value = false
+})
+function savePrivacy(type , status){
+  saving.value = true
+  post("/api/user/save-privacy",{
+    type: type,
+    statue: status
+  },() => {
+    ElMessage.success(`隐私信息修改成功`)
+    saving.value = false
+  })
+}
 </script>
 
 <template>
   <div style="margin: auto;max-width: 600px">
     <div style="margin-top: 20px">
-      <card :icon="Hide" title="隐私设置" desc="在这里你可以选择隐藏哪些数据，当个未知和神秘的人">
+      <card :icon="Hide" title="隐私设置" desc="在这里你可以选择隐藏哪些数据，当个未知和神秘的人" v-loading="saving">
         <div class="checkbox-list">
-          <el-checkbox>公开展示我的手机号</el-checkbox>
-          <el-checkbox>公开展示我的电子邮箱</el-checkbox>
-          <el-checkbox>公开展示我的微信</el-checkbox>
-          <el-checkbox>公开展示我的QQ</el-checkbox>
-          <el-checkbox>公开展示我的性别</el-checkbox>
+          <el-checkbox @change="savePrivacy('phone',privacy.phone)" v-model="privacy.phone">公开展示我的手机号</el-checkbox>
+          <el-checkbox @change="savePrivacy('email',privacy.email)" v-model="privacy.email">公开展示我的电子邮箱</el-checkbox>
+          <el-checkbox @change="savePrivacy('wx',privacy.wechat)" v-model="privacy.wechat">公开展示我的微信</el-checkbox>
+          <el-checkbox @change="savePrivacy('qq',privacy.qq)" v-model="privacy.qq">公开展示我的QQ</el-checkbox>
+          <el-checkbox @change="savePrivacy('gender',privacy.gender)" v-model="privacy.gender">公开展示我的性别</el-checkbox>
         </div>
       </card>
       <card style="margin: 20px 0" :icon="Setting" title="更改密码" desc="更改账户密码在这里哦，请牢记您的密码哟！">
