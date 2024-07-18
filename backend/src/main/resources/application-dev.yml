@@ -41,3 +41,7 @@ spring:
       origin: '*'
       credentials: false
       methods: '*'
+    minio:
+      endpoint: 'http://47.97.2.37:9000'
+      username: 'minio_KHCfr2'
+      password: 'minio_AXs47P'

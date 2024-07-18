@@ -46,3 +46,7 @@ spring:
       origin: '*'
       credentials: false
       methods: '*'
+    minio:
+      endpoint: "http://localhost:9000"
+      username: '用户名'
+      password: '密码'

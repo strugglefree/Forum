@@ -4,8 +4,9 @@ import Card from "@/components/Card.vue";
 import {Message, Plus, Refresh, User} from "@element-plus/icons-vue";
 import {useStore} from "@/store";
 import {computed, reactive, ref} from "vue";
-import {get, post} from "@/net";
+import {accessHeader, get, post} from "@/net";
 import {ElMessage} from "element-plus";
+import axios from "axios";
 
 const store = useStore();
 const registerTime = computed(() => new Date(store.user.registerTime).toLocaleString())
@@ -117,6 +118,21 @@ function modifyEmail(){
     }
   })
 }
+
+function beforeUploadAvatar(rawFile){
+  if(rawFile.type !== 'image/jpeg' && rawFile.type !== 'image/png'){
+    ElMessage.error("头像只能是 JPG/PNG 格式！")
+    return false
+  }else if(rawFile.size > 1024*150){
+    ElMessage.error("头像大小应该小于150KB！")
+    return false
+  }else return true
+}
+
+function uploadSuccess(response){
+  ElMessage.success("头像上传成功！")
+  store.user.avatar = response.data
+}
 </script>
 
 <template>
@@ -178,8 +194,19 @@ function modifyEmail(){
         <card>
           <div style="text-align: center;padding: 5px 15px 0 15px">
             <el-avatar :size="70"
-                src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"
+                :src="store.avatarUrl"
             />
+            <div style="margin: 5px 0">
+              <el-upload
+                  :action="axios.defaults.baseURL + '/api/images/avatar'"
+                  :show-file-list="false"
+                  :before-upload="beforeUploadAvatar"
+                  :on-success="uploadSuccess"
+                  :headers = accessHeader()
+              >
+                <el-button round size="small">更换头像</el-button>
+              </el-upload>
+            </div>
             <div style="font-weight: bold">你好，{{ store.user.username }}</div>
           </div>
           <el-divider style="margin: 10px 0"/>
