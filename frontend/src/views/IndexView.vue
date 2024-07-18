@@ -93,12 +93,12 @@ function userLogout(){
                 router
                 style="min-height: calc(100vh - 55px)"
                 :default-active="$route.path">
-              <el-sub-menu index="1">
+              <el-sub-menu>
                 <template #title>
                   <el-icon><Location/></el-icon>
                   <span><b>校园论坛</b></span>
                 </template>
-                <el-menu-item index="1-1">
+                <el-menu-item index="/index">
                   <template #title>
                     <el-icon><ChatLineRound /></el-icon>
                     帖子广场

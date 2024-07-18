@@ -50,3 +50,5 @@ spring:
       endpoint: "http://localhost:9000"
       username: '用户名'
       password: '密码'
+  weather:
+    key: "申请的key"
