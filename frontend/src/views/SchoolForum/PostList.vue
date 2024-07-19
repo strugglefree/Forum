@@ -3,13 +3,14 @@
 import LightCard from "@/components/LightCard.vue";
 import {Connection, EditPen, Guide, Sunrise} from "@element-plus/icons-vue";
 import Weather from "@/components/Weather.vue";
-import {computed, reactive} from "vue";
+import {computed, reactive, ref} from "vue";
 import {get} from "@/net";
 import {ElMessage} from "element-plus";
+import TopicEditor from "@/components/TopicEditor.vue";
 
 const today = computed(() => {
   const date = new Date()
-  return `${date.getFullYear()} 年 ${date.getMonth()} 月 ${date.getDay()} 日`
+  return `${date.getFullYear()} 年 ${date.getMonth()+1} 月 ${date.getDate()} 日`
 })
 
 const weather = reactive({
@@ -18,6 +19,8 @@ const weather = reactive({
   hourly: [],
   success: false
 })
+
+const editor = ref(false)
 
 navigator.geolocation.getCurrentPosition(position => {
   const lon = position.coords.longitude
@@ -39,13 +42,15 @@ navigator.geolocation.getCurrentPosition(position => {
           enableHighAccuracy: true
     }
 )
+const ip = ref("")
+get(`/api/forum/get-ip`,(data)=>ip.value=data)
 </script>
 
 <template>
   <div style="display: flex;margin: 20px auto;gap: 20px;max-width: 1000px">
     <div style="flex: 1">
       <light-card>
-        <div class="create-topic">
+        <div class="create-topic" @click="editor = true">
           <el-icon><EditPen /></el-icon> 点击发表主题...
         </div>
       </light-card>
@@ -86,7 +91,7 @@ navigator.geolocation.getCurrentPosition(position => {
             </div>
             <div class="info-text">
               <div>当前IP</div>
-              <div>127.0.0.1</div>
+              <div>{{ip}}</div>
             </div>
           </div>
         </light-card>
@@ -106,6 +111,7 @@ navigator.geolocation.getCurrentPosition(position => {
       </div>
 
     </div>
+    <topic-editor :show="editor" @close="editor = false" @created="editor = false"></topic-editor>
   </div>
 </template>
 

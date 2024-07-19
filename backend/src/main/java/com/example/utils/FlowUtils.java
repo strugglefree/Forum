@@ -19,6 +19,9 @@ public class FlowUtils {
 
     @Resource
     StringRedisTemplate template  ;
+
+    private static final LimitAction defaultAction = overclock -> !overclock;
+
     /**
      * @description: 限制发送的时间间距
      * @param: [key, blockTime]
@@ -27,7 +30,7 @@ public class FlowUtils {
      * @date: 2024/7/13 下午1:42
      */
     public boolean limitOnceCheck(String key, int blockTime){
-        return this.internalCheck(key, 1, blockTime, (overclock) -> false);
+        return this.internalCheck(key, 1, blockTime, defaultAction);
     }
     /**
      * @description: 内部使用请求限制主要逻辑
@@ -77,6 +80,18 @@ public class FlowUtils {
             return !overclock;
         });
     }
+
+    /**
+     * @description: 针对于在时间段内多次请求的限制，如3秒内请求20次
+     * @param: [counterKey, frequency, period]
+     * @return: boolean
+     * @author Ll
+     * @date: 2024/7/19 上午10:09
+     */
+    public boolean limitPeriodCountCheck(String counterKey, int frequency, int period){
+        return this.internalCheck(counterKey, frequency, period, defaultAction);
+    }
+
     /**
      * @description: 限制行为与策略
      * @author Ll

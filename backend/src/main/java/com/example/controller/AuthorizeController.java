@@ -5,6 +5,7 @@ import com.example.entity.vo.request.ConfirmResetVO;
 import com.example.entity.vo.request.EmailRegisterVO;
 import com.example.entity.vo.request.EmailResetVO;
 import com.example.service.AccountService;
+import com.example.utils.ControllerUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -14,7 +15,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * @author Ll
@@ -28,12 +28,14 @@ public class AuthorizeController {
 
     @Resource
     private AccountService service;
+    @Resource
+    ControllerUtils utils;
 
     @GetMapping("/ask-code")
     public RestBean<Void> askCode(@RequestParam @Email String email,
                                   @RequestParam @Pattern(regexp = "(register|reset|modify)") String type,
                                   HttpServletRequest request) {
-       return this.messageHandle(() -> service.registerEmailVerifyCode(type,email,request.getRemoteAddr()));
+       return utils.messageHandle(() -> service.registerEmailVerifyCode(type,email,request.getRemoteAddr()));
     }
 
     @PostMapping("/register")
@@ -59,18 +61,7 @@ public class AuthorizeController {
      * @date: 2024/7/14 上午9:43
      */
     private <T> RestBean<Void> messageHandle(T vo , Function<T, String> function){
-        return this.messageHandle(() -> function.apply(vo));
+        return utils.messageHandle(() -> function.apply(vo));
     }
 
-    /**
-     * @description: 针对于返回值为String作为错误信息的方法进行统一处理
-     * @param: [action]
-     * @return: com.example.entity.RestBean<java.lang.Void>
-     * @author Ll
-     * @date: 2024/7/14 上午9:28
-     */
-    private RestBean<Void> messageHandle(Supplier<String> action){
-        String s = action.get();
-        return s == null ? RestBean.success() : RestBean.failure(400,s);
-    }
 }

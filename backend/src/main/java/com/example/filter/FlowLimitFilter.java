@@ -10,7 +10,6 @@ import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -34,9 +33,9 @@ public class FlowLimitFilter extends HttpFilter {
     FlowUtils utils;
 
     //指定时间内最大请求次数限制
-    final int limit = 10;
+    final int limit = 100;
     //计数时间周期
-    final int period = 3;
+    final int period = 2;
     //超出请求限制封禁时间
     final int block = 30;
 

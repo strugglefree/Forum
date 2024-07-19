@@ -92,8 +92,9 @@ function userLogout(){
             <el-menu
                 router
                 style="min-height: calc(100vh - 55px)"
+                :default-openeds="['1','3']"
                 :default-active="$route.path">
-              <el-sub-menu>
+              <el-sub-menu index="1">
                 <template #title>
                   <el-icon><Location/></el-icon>
                   <span><b>校园论坛</b></span>

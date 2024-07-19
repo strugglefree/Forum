@@ -1,5 +1,9 @@
 # 开发环境配置
 spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
   mail:
     host: smtp.163.com
     username: Javastudy1@163.com

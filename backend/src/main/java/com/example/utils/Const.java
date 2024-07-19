@@ -2,7 +2,7 @@ package com.example.utils;
 
 /**
  * @author Ll
- * @description: Redis的分类
+ * @description: 常量字符串集合
  * @date 2024/7/11 下午7:10
  */
 public class Const {
@@ -24,4 +24,9 @@ public class Const {
     public final static String MQ_MAIL = "mail";
     //用户角色
     public final static String ROLE_DEFAULT = "user";
+
+    //论坛相关
+    public final static String FORUM_WEATHER_CACHE = "weather:cache:";
+    public final static String FORUM_IMAGE_COUNTER = "forum:image:";
+    public final static String FORUM_TOPIC_CREATE_COUNTER = "forum:topic:create:";
 }

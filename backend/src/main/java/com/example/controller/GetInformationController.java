@@ -23,10 +23,10 @@ public class GetInformationController {
     @Resource
     ImageService service;
 
-    @GetMapping("/images/avatar/**")
+    @GetMapping("/images/**")
     public void AvatarFetch(HttpServletRequest req, HttpServletResponse resp) throws Exception {
+        resp.setHeader("Content-Type","image/jpeg");
         this.getAvatar(req, resp);
-
     }
 
     private void getAvatar(HttpServletRequest req, HttpServletResponse resp) throws Exception {
