@@ -9,7 +9,8 @@ import {ElMessage} from "element-plus";
 import axios from "axios";
 import {accessHeader, get, post} from "@/net";
 import ColorDot from "@/components/ColorDot.vue";
-
+import {useStore} from "@/store"
+const store = useStore();
 defineProps({
   show: Boolean
 })
@@ -21,7 +22,6 @@ const editor = reactive({
   title: '',
   text: '',
   loading: false,
-  types: []
 })
 
 const refEditor = ref()
@@ -89,12 +89,16 @@ function submitTopic(){
     ElMessage.warning("内容过多")
     return
   }
+  if(!editor.type) {
+    ElMessage.warning("您还没有选择类型")
+    return;
+  }
   if(!editor.title){
     ElMessage.warning("您还没有编写标题")
     return;
   }
-  if(!editor.type){
-    ElMessage.warning("您还没有选择类型")
+  if(text.length === 0) {
+    ElMessage.warning("您还没有输入内容")
     return;
   }
   post(`/api/forum/create-topic`,{
@@ -106,9 +110,6 @@ function submitTopic(){
     emit('created')
   })
 }
-get(`api/forum/types`,(data)=>{
-  editor.types = data
-},message => ElMessage.error(message))
 
 function deltaToText(delta){
   if (!delta.ops) return ''
@@ -135,8 +136,8 @@ const deltaLength = computed(() => deltaToText(editor.text).length)
       </template>
       <div style="display: flex;gap: 10px">
         <div style="width: 150px">
-          <el-select placeholder="请选择帖子类型" v-model="editor.type" :disabled="!editor.types.length" value-key="id">
-            <el-option v-for="item in editor.types" :value="item" :label="item.name">
+          <el-select placeholder="请选择帖子类型" v-model="editor.type" :disabled="!store.forum.types.length" value-key="id">
+            <el-option v-for="item in store.forum.types" :value="item" :label="item.name">
               <div>
                 <color-dot :color="item.color"/>
                 <span style="margin-left: 10px">{{ item.name }}</span>

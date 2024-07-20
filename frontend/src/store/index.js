@@ -10,6 +10,9 @@ export const useStore = defineStore("general",{
                 role: '',
                 registerTime: null,
                 avatar: ''
+            },
+            forum:{
+                types:[]
             }
         }
     },
@@ -20,5 +23,13 @@ export const useStore = defineStore("general",{
             }else
                 return "https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"
         }
+    },
+    actions: {
+        findTypeById(id) {
+            for (let type of this.forum.types) {
+                if (type.id === id)
+                    return type
+            }
+        },
     }
 })

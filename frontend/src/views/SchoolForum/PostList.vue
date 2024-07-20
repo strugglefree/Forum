@@ -1,12 +1,16 @@
 <script setup>
 
 import LightCard from "@/components/LightCard.vue";
-import {Connection, EditPen, Guide, Sunrise} from "@element-plus/icons-vue";
+import {Clock, Connection, EditPen, Guide, Sunrise} from "@element-plus/icons-vue";
 import Weather from "@/components/Weather.vue";
 import {computed, reactive, ref} from "vue";
 import {get} from "@/net";
 import {ElMessage} from "element-plus";
 import TopicEditor from "@/components/TopicEditor.vue";
+import {useStore} from "@/store";
+import axios from "axios";
+
+const store = useStore()
 
 const today = computed(() => {
   const date = new Date()
@@ -21,25 +25,32 @@ const weather = reactive({
 })
 
 const editor = ref(false)
-
+const list = ref(null)
+get(`api/forum/types`,(data)=>{
+  store.forum.types = data
+},message => ElMessage.error(message))
+function updateList(){
+  get('/api/forum/list-topic?type=0&page=0',(data) => {list.value = data})
+}
+updateList();
 navigator.geolocation.getCurrentPosition(position => {
-  const lon = position.coords.longitude
-  const lat = position.coords.latitude
-  get(`/api/forum/weather?longitude=${lon}&latitude=${lat}`,(data)=>{
-    Object.assign(weather,data)
-    weather.success = true
-  },message => ElMessage.error(message))
-}, error => {
-        console.warn(error)
-        ElMessage.warning("位置信息获取超时，请检查网络设置")
+      const lon = position.coords.longitude
+      const lat = position.coords.latitude
+      get(`/api/forum/weather?longitude=${lon}&latitude=${lat}`,(data)=>{
+        Object.assign(weather,data)
+        weather.success = true
+      },message => ElMessage.error(message))
+    }, error => {
+      console.warn(error)
+      ElMessage.warning("位置信息获取超时，请检查网络设置")
       get(`/api/forum/weather?longitude=116.3912757&latitude=39.906217`,(data)=>{
         Object.assign(weather,data)
         weather.success = true
       },message => ElMessage.error(message))
     },
     {
-          timeout: 3000,
-          enableHighAccuracy: true
+      timeout: 3000,
+      enableHighAccuracy: true
     }
 )
 const ip = ref("")
@@ -55,9 +66,34 @@ get(`/api/forum/get-ip`,(data)=>ip.value=data)
         </div>
       </light-card>
       <light-card style="height: 30px;margin-top: 10px"/>
-      <div style="margin-top: 10px;display: flex;flex-direction: column;gap: 10px">
-        <light-card style="height: 150px" v-for="item in 10">
-
+      <div style="margin-top: 10px;display: flex;flex-direction: column;gap: 10px" v-if="store.forum.types">
+        <light-card v-for="item in list" class="topic-card">
+          <div style="display: flex">
+            <div>
+              <el-avatar :size="30" :src="`${axios.defaults.baseURL}/images${item.avatar}`"></el-avatar>
+            </div>
+            <div style="margin-left: 7px;transform: translateY(-2px)">
+              <div>{{item.username}}</div>
+              <div style="font-size: 12px;color: grey" >
+                <el-icon><Clock/></el-icon>
+                <div style="margin-left: 2px;display: inline-block;transform: translateY(-2px)">{{new Date(item.time).toLocaleString()}}</div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="topic-type" :style="{
+              color: store.findTypeById(item.type)?.color + 'EE',
+              'border-color': store.findTypeById(item.type)?.color + '77',
+              'background': store.findTypeById(item.type)?.color + '22',
+            }">
+              {{store.findTypeById(item.type)?.name}}
+            </div>
+            <span style="font-weight: bold;margin-left: 5px">{{item.title}}</span>
+          </div>
+          <div class="topic-content">{{item.content}}</div>
+          <div style="display: grid;grid-template-columns: repeat(3,1fr);grid-gap: 10px">
+            <el-image class="topic-image" v-for="img in item.image" :src="img" fit="cover"></el-image>
+          </div>
         </light-card>
       </div>
     </div>
@@ -111,11 +147,43 @@ get(`/api/forum/get-ip`,(data)=>ip.value=data)
       </div>
 
     </div>
-    <topic-editor :show="editor" @close="editor = false" @created="editor = false"></topic-editor>
+    <topic-editor :show="editor" @close="editor = false" @created="editor = false;updateList()"></topic-editor>
   </div>
 </template>
 
 <style lang="less" scoped>
+.topic-card{
+  padding: 15px;
+  transition: scale .3s;
+  &:hover{
+    scale: 1.02;
+    cursor: pointer;
+  }
+  .topic-content{
+    font-size: 13px;
+    color: grey;
+    margin: 5px 0;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .topic-type{
+    display: inline-block;
+    font-size: 12px;
+    border: solid 0.5px grey;
+    border-radius: 3px;
+    padding: 0 5px;
+    height: 18px;
+  }
+  .topic-image{
+    height: 100%;
+    width: 100%;
+    max-height: 120px;
+    border-radius: 5px;
+  }
+}
 .info-text{
   display: flex;
   justify-content: space-between;

@@ -89,7 +89,7 @@ public class FlowUtils {
      * @date: 2024/7/19 上午10:09
      */
     public boolean limitPeriodCountCheck(String counterKey, int frequency, int period){
-        return this.internalCheck(counterKey, frequency, period, defaultAction);
+        return !this.internalCheck(counterKey, frequency, period, defaultAction);
     }
 
     /**

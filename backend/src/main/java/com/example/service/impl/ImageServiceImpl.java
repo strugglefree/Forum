@@ -80,7 +80,7 @@ public class ImageServiceImpl extends ServiceImpl<ImageStoreMapper, StoreImage> 
     @Override
     public String saveImage(MultipartFile file, int id) throws IOException {
         String key = Const.FORUM_IMAGE_COUNTER+id;
-        if(!utils.limitPeriodCountCheck(key,20,3600))
+        if(utils.limitPeriodCountCheck(key, 20, 3600))
             return null;
         String initName = UUID.randomUUID().toString().replace("-","");
         Date date = new Date();

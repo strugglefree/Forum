@@ -3,6 +3,7 @@ package com.example.controller;
 import com.example.entity.RestBean;
 import com.example.entity.dto.TopicType;
 import com.example.entity.vo.request.TopicCreateVO;
+import com.example.entity.vo.response.TopicPreviewVO;
 import com.example.entity.vo.response.TypesVO;
 import com.example.entity.vo.response.WeatherVO;
 import com.example.service.TopicService;
@@ -13,6 +14,7 @@ import com.example.utils.IPUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -59,6 +61,12 @@ public class ForumController {
     public RestBean<Void> createTopic(@RequestBody @Valid TopicCreateVO vo,
                                       @RequestAttribute(Const.ATTR_USER_ID) int uid){
         return controllerUtils.messageHandle(()->topicService.createTopic(vo, uid));
+    }
+
+    @GetMapping("/list-topic")
+    public RestBean<List<TopicPreviewVO>> listTopic(@RequestParam @Min(0) int type,
+                                                    @RequestParam @Min(0) int page){
+        return RestBean.success(topicService.getListTopic(page,type));
     }
 
     @GetMapping("/get-ip")
