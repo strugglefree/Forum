@@ -6,7 +6,10 @@ import jakarta.annotation.Resource;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -41,6 +44,11 @@ public class CacheUtils {
     }
 
     public void deleteFromCache(String key) {
-        stringRedisTemplate.delete(key);
+        deleteFromCachePattern(key);
+    }
+
+    private void deleteFromCachePattern(String key){
+        Set<String> keys = Optional.ofNullable(stringRedisTemplate.keys(key)).orElse(Collections.emptySet());
+        stringRedisTemplate.delete(keys);
     }
 }

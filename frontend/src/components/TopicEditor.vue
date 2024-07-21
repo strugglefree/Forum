@@ -137,7 +137,7 @@ const deltaLength = computed(() => deltaToText(editor.text).length)
       <div style="display: flex;gap: 10px">
         <div style="width: 150px">
           <el-select placeholder="请选择帖子类型" v-model="editor.type" :disabled="!store.forum.types.length" value-key="id">
-            <el-option v-for="item in store.forum.types" :value="item" :label="item.name">
+            <el-option v-for="item in store.forum.types.filter(type => type.id > 0)" :value="item" :label="item.name">
               <div>
                 <color-dot :color="item.color"/>
                 <span style="margin-left: 10px">{{ item.name }}</span>

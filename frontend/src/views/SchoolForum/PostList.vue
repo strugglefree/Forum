@@ -1,17 +1,26 @@
 <script setup>
 
 import LightCard from "@/components/LightCard.vue";
-import {Clock, Connection, EditPen, Guide, Sunrise} from "@element-plus/icons-vue";
+import {Clock, Compass, Connection, Document, Edit, EditPen, Guide, Microphone, Sunrise, Picture} from "@element-plus/icons-vue";
 import Weather from "@/components/Weather.vue";
-import {computed, reactive, ref} from "vue";
+import {computed, reactive, ref, watch} from "vue";
 import {get} from "@/net";
 import {ElMessage} from "element-plus";
 import TopicEditor from "@/components/TopicEditor.vue";
 import {useStore} from "@/store";
 import axios from "axios";
+import ColorDot from "@/components/ColorDot.vue";
+import router from "@/router";
+import TopicTag from "@/components/TopicTag.vue";
 
 const store = useStore()
-
+const topics = reactive({
+  list: [],
+  type: 0,
+  page: 0,
+  end: false,
+  tops: []
+})
 const today = computed(() => {
   const date = new Date()
   return `${date.getFullYear()} 年 ${date.getMonth()+1} 月 ${date.getDate()} 日`
@@ -25,14 +34,36 @@ const weather = reactive({
 })
 
 const editor = ref(false)
-const list = ref(null)
-get(`api/forum/types`,(data)=>{
-  store.forum.types = data
-},message => ElMessage.error(message))
+
+get(`/api/forum/top-topic`,data=> topics.tops=data)
+
+watch(() => topics.type ,() => {
+  resetList()
+},{immediate:true})
 function updateList(){
-  get('/api/forum/list-topic?type=0&page=0',(data) => {list.value = data})
+  if(topics.end) return;
+  get(`/api/forum/list-topic?type=${topics.type}&page=${topics.page}`,(data) => {
+    if(data){
+      data.forEach((item)=>{topics.list.push(item)});
+      topics.page++
+    }
+    if(!data || data.length < 10){}
+     topics.end=true
+  })
 }
-updateList();
+
+function onTopicCreate(){
+  editor.value = false
+  resetList()
+}
+
+function resetList(){
+  topics.page = 0
+  topics.list = [];
+  topics.end = false
+  updateList()
+}
+
 navigator.geolocation.getCurrentPosition(position => {
       const lon = position.coords.longitude
       const lat = position.coords.latitude
@@ -64,38 +95,59 @@ get(`/api/forum/get-ip`,(data)=>ip.value=data)
         <div class="create-topic" @click="editor = true">
           <el-icon><EditPen /></el-icon> 点击发表主题...
         </div>
+        <div style="margin-top: 10px;display: flex;gap: 13px;font-size: 18px;color: grey">
+          <el-icon><Edit /></el-icon>
+          <el-icon><Document /></el-icon>
+          <el-icon><Compass /></el-icon>
+          <el-icon><Picture /></el-icon>
+          <el-icon><Microphone /></el-icon>
+        </div>
       </light-card>
-      <light-card style="height: 30px;margin-top: 10px"/>
-      <div style="margin-top: 10px;display: flex;flex-direction: column;gap: 10px" v-if="store.forum.types">
-        <light-card v-for="item in list" class="topic-card">
-          <div style="display: flex">
-            <div>
-              <el-avatar :size="30" :src="`${axios.defaults.baseURL}/images${item.avatar}`"></el-avatar>
-            </div>
-            <div style="margin-left: 7px;transform: translateY(-2px)">
-              <div>{{item.username}}</div>
-              <div style="font-size: 12px;color: grey" >
-                <el-icon><Clock/></el-icon>
-                <div style="margin-left: 2px;display: inline-block;transform: translateY(-2px)">{{new Date(item.time).toLocaleString()}}</div>
+      <light-card style="margin-top: 10px;display: flex;flex-direction: column;gap: 10px;">
+        <div class="top-topic" v-for="item in topics.tops"  @click="router.push('/index/topic-detail/'+item.id)">
+          <el-tag type="info" size="small">置顶</el-tag>
+          <div>{{item.title}}</div>
+          <div>{{new Date(item.time).toLocaleString()}}</div>
+        </div>
+      </light-card>
+      <light-card style="margin-top: 10px;display: flex;gap: 7px">
+        <div :class="`type-select-card ${topics.type === item.id ? 'active' : ''}`"
+             v-for="item in store.forum.types"
+             @click="topics.type = item.id">
+          <color-dot :color="item.color"/>
+          <span style="margin-left: 5px">{{item.name}}</span>
+        </div>
+      </light-card>
+      <transition name="el-fade-in" mode="out-in">
+        <div v-if="topics.list">
+          <div style="margin-top: 10px;display: flex;flex-direction: column;gap: 10px"
+               v-if="store.forum.types" v-infinite-scroll="updateList">
+            <light-card v-for="item in topics.list" class="topic-card"
+                        @click="router.push('/index/topic-detail/'+item.id)">
+              <div style="display: flex">
+                <div>
+                  <el-avatar :size="30" :src="`${axios.defaults.baseURL}/images${item.avatar}`"></el-avatar>
+                </div>
+                <div style="margin-left: 7px;transform: translateY(-2px)">
+                  <div>{{item.username}}</div>
+                  <div style="font-size: 12px;color: grey" >
+                    <el-icon><Clock/></el-icon>
+                    <div style="margin-left: 2px;display: inline-block;transform: translateY(-2px)">{{new Date(item.time).toLocaleString()}}</div>
+                  </div>
+                </div>
               </div>
-            </div>
+              <div>
+                <topic-tag :type="item.type"/>
+                <span style="font-weight: bold;margin-left: 5px">{{item.title}}</span>
+              </div>
+              <div class="topic-content">{{item.content}}</div>
+              <div style="display: grid;grid-template-columns: repeat(3,1fr);grid-gap: 10px">
+                <el-image class="topic-image" v-for="img in item.image" :src="img" fit="cover"></el-image>
+              </div>
+            </light-card>
           </div>
-          <div>
-            <div class="topic-type" :style="{
-              color: store.findTypeById(item.type)?.color + 'EE',
-              'border-color': store.findTypeById(item.type)?.color + '77',
-              'background': store.findTypeById(item.type)?.color + '22',
-            }">
-              {{store.findTypeById(item.type)?.name}}
-            </div>
-            <span style="font-weight: bold;margin-left: 5px">{{item.title}}</span>
-          </div>
-          <div class="topic-content">{{item.content}}</div>
-          <div style="display: grid;grid-template-columns: repeat(3,1fr);grid-gap: 10px">
-            <el-image class="topic-image" v-for="img in item.image" :src="img" fit="cover"></el-image>
-          </div>
-        </light-card>
-      </div>
+        </div>
+      </transition>
     </div>
     <div style="width: 300px">
       <div style="position: sticky;top: 20px">
@@ -147,11 +199,57 @@ get(`/api/forum/get-ip`,(data)=>ip.value=data)
       </div>
 
     </div>
-    <topic-editor :show="editor" @close="editor = false" @created="editor = false;updateList()"></topic-editor>
+    <topic-editor :show="editor" @close="editor = false" @created="onTopicCreate"></topic-editor>
   </div>
 </template>
 
 <style lang="less" scoped>
+.top-topic{
+  display: flex;
+
+  div:first-of-type{
+    font-size: 14px;
+    margin-left: 10px;
+    font-weight: bold;
+    opacity: 0.8;
+    transition: background-color .3s;
+
+    &:hover{
+      color: grey;
+    }
+  }
+
+  div:nth-of-type(2){
+    flex: 1;
+    font-size: 13px;
+    text-align: right;
+    color: grey;
+  }
+
+  &:hover{
+    cursor: pointer;
+  }
+}
+
+.type-select-card {
+  background-color: #f5f5f5;
+  padding: 2px 7px;
+  font-size: 14px;
+  border-radius: 3px;
+  box-sizing: border-box;
+  transition: background-color .3s;
+
+  &.active {
+    border: solid 1px #ead4c4;
+  }
+
+  &:hover {
+    cursor: pointer;
+    background-color: #dadada;
+  }
+}
+
+
 .topic-card{
   padding: 15px;
   transition: scale .3s;
@@ -168,14 +266,6 @@ get(`/api/forum/get-ip`,(data)=>ip.value=data)
     -webkit-line-clamp: 3;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-  .topic-type{
-    display: inline-block;
-    font-size: 12px;
-    border: solid 0.5px grey;
-    border-radius: 3px;
-    padding: 0 5px;
-    height: 18px;
   }
   .topic-image{
     height: 100%;
@@ -203,7 +293,21 @@ get(`/api/forum/get-ip`,(data)=>ip.value=data)
   }
 }
 
-.dark .create-topic{
-  background-color: #222222;
+.dark {
+  .create-topic{
+    background-color: #222222;
+  }
+  .type-select-card{
+    background-color: #282828;
+
+    &:active{
+      border: solid 1px #51493d;
+    }
+
+    &:hover{
+      background-color: #5e5e5e;
+    }
+  }
 }
+
 </style>

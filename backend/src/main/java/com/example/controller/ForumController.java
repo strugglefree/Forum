@@ -3,9 +3,7 @@ package com.example.controller;
 import com.example.entity.RestBean;
 import com.example.entity.dto.TopicType;
 import com.example.entity.vo.request.TopicCreateVO;
-import com.example.entity.vo.response.TopicPreviewVO;
-import com.example.entity.vo.response.TypesVO;
-import com.example.entity.vo.response.WeatherVO;
+import com.example.entity.vo.response.*;
 import com.example.service.TopicService;
 import com.example.service.WeatherService;
 import com.example.utils.Const;
@@ -66,7 +64,7 @@ public class ForumController {
     @GetMapping("/list-topic")
     public RestBean<List<TopicPreviewVO>> listTopic(@RequestParam @Min(0) int type,
                                                     @RequestParam @Min(0) int page){
-        return RestBean.success(topicService.getListTopic(page,type));
+        return RestBean.success(topicService.getListTopic(page+1,type));
     }
 
     @GetMapping("/get-ip")
@@ -74,4 +72,13 @@ public class ForumController {
         return RestBean.success(ipUtils.getIpAddr(request));
     }
 
+    @GetMapping("/top-topic")
+    public RestBean<List<TopTopicVO>> topTopic(){
+        return RestBean.success(topicService.getListTopTopic());
+    }
+
+    @GetMapping("/topic")
+    public RestBean<TopicDetailsVO> topic(@RequestParam @Min(0) int tid){
+        return RestBean.success(topicService.getTopicDetails(tid));
+    }
 }

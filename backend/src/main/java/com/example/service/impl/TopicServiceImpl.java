@@ -2,13 +2,15 @@ package com.example.service.impl;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.example.entity.dto.Topic;
-import com.example.entity.dto.TopicType;
+import com.example.entity.dto.*;
 import com.example.entity.vo.request.TopicCreateVO;
+import com.example.entity.vo.response.TopTopicVO;
+import com.example.entity.vo.response.TopicDetailsVO;
 import com.example.entity.vo.response.TopicPreviewVO;
-import com.example.mapper.TopicMapper;
-import com.example.mapper.TopicTypesMapper;
+import com.example.mapper.*;
 import com.example.service.TopicService;
 import com.example.utils.CacheUtils;
 import com.example.utils.Const;
@@ -35,6 +37,12 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     private FlowUtils flowUtils;
     @Resource
     private CacheUtils cacheUtils;
+    @Resource
+    private AccountMapper accountMapper;
+    @Resource
+    private AccountDetailsMapper accountDetailsMapper;
+    @Resource
+    private AccountPrivacyMapper accountPrivacyMapper;
 
     @PostConstruct
     public void init() {
@@ -76,23 +84,90 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         cacheUtils.deleteFromCache(Const.FORUM_TOPIC_CACHE + "*");
         return null;
     }
-
+    /**
+     * @description: 获取帖子的预览（一次只从库里取最多十个）
+     * @param: [page, type]
+     * @return: java.util.List<com.example.entity.vo.response.TopicPreviewVO>
+     * @author Ll
+     * @date: 2024/7/21 下午1:24
+     */
     @Override
     public List<TopicPreviewVO> getListTopic(int page, int type) {
         String key = Const.FORUM_TOPIC_CACHE + page + ':' + type;
         List<TopicPreviewVO> list = cacheUtils.getListFromCache(key,TopicPreviewVO.class);
         if(list != null){ return list;}
-        List<Topic> topics ;
-        if(type == 0) topics=baseMapper.selectTopic(page*10);
-        else topics=baseMapper.selectTopicByType(page*10, type);
+        Page<Topic> p = Page.of(page,10);
+        if(type == 0) baseMapper.selectPage(p,Wrappers.<Topic>query().orderByDesc("time"));
+        else baseMapper.selectPage(p,Wrappers.<Topic>query().eq("type",type).orderByDesc("time"));
+        List<Topic> topics = p.getRecords();
         if (topics.isEmpty()) { return null;}
         list = topics.stream().map(this::resolveToPreview).toList();
         cacheUtils.saveListToCache(key, list, 60);
         return list;
     }
 
+    /**
+     * @description: 获取置顶帖子列表
+     * @param: []
+     * @return: java.util.List<com.example.entity.vo.response.TopTopicVO>
+     * @author Ll
+     * @date: 2024/7/21 下午1:27
+     */
+    @Override
+    public List<TopTopicVO> getListTopTopic() {
+        List<Topic> topics = baseMapper.selectList(Wrappers.<Topic>query()
+                .select("id", "title", "time").eq("top", 1));
+        return topics.stream().map((topic) -> {
+            TopTopicVO vo = new TopTopicVO();
+            BeanUtils.copyProperties(topic,vo);
+            return vo;
+        }).toList();
+    }
+
+    /**
+     * @description: 获取帖子详情
+     * @param: [tid]
+     * @return: com.example.entity.vo.response.TopicDetailsVO
+     * @author Ll
+     * @date: 2024/7/21 下午3:47
+     */
+    @Override
+    public TopicDetailsVO getTopicDetails(int tid) {
+        TopicDetailsVO vo = new TopicDetailsVO();
+        Topic topic = baseMapper.selectById(tid);
+        BeanUtils.copyProperties(topic,vo);
+        TopicDetailsVO.User user = new TopicDetailsVO.User();
+        vo.setUser(this.fillUserDetailsByPrivacy(user,topic.getUid()));
+        return vo;
+    }
+
+    /**
+     * @description: 隐私过滤
+     * @param: [target, uid]
+     * @return: T
+     * @author Ll
+     * @date: 2024/7/21 下午3:48
+     */
+    private <T> T fillUserDetailsByPrivacy(T target , int uid){
+        Account account = accountMapper.selectById(uid);
+        AccountPrivacy accountPrivacy = accountPrivacyMapper.selectById(uid);
+        AccountDetails accountDetails = accountDetailsMapper.selectById(uid);
+        String[] hidden = accountPrivacy.hiddenFields();
+        BeanUtils.copyProperties(account,target,hidden);
+        BeanUtils.copyProperties(accountDetails,target,hidden);
+        return target;
+    }
+
+    /**
+     * @description: 将Topic类的对象转化成TopicPreviewVO
+     * @param: [topic]
+     * @return: com.example.entity.vo.response.TopicPreviewVO
+     * @author Ll
+     * @date: 2024/7/21 下午1:25
+     */
     private TopicPreviewVO resolveToPreview(Topic topic){
         TopicPreviewVO vo = new TopicPreviewVO();
+        BeanUtils.copyProperties(accountMapper.selectById(topic.getUid()),vo);
         BeanUtils.copyProperties(topic,vo);
         List<String> images = new ArrayList<>();
         StringBuilder previewText = new StringBuilder();
@@ -110,13 +185,6 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         vo.setImage(images);
         return vo;
     }
-
-
-
-
-
-
-
 
     /**
      * @description: 检查是否超出字符限制
