@@ -18,9 +18,13 @@ import com.example.utils.FlowUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -43,6 +47,8 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     private AccountDetailsMapper accountDetailsMapper;
     @Resource
     private AccountPrivacyMapper accountPrivacyMapper;
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     @PostConstruct
     public void init() {
@@ -142,6 +148,69 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     }
 
     /**
+     * @description: 保存点赞或收藏的数据
+     * @param: [interact, state]
+     * @return: void
+     * @author Ll
+     * @date: 2024/7/22 下午4:06
+     */
+    @Override
+    public void interact(Interact interact, boolean state) {
+        String type = interact.getType();
+        synchronized (type.intern()){
+            stringRedisTemplate.opsForHash().put(type,interact.toKey(),Boolean.toString(state));
+            this.saveInteractSchedule(type);
+        }
+    }
+
+    private final Map<String,Boolean> state = new HashMap<>(); //存储状态
+    ScheduledExecutorService service = Executors.newScheduledThreadPool(2);//具有两个线程池，用于调度任务
+    /**
+     * @description: 将缓存区的数据控制在3秒提交到数据库一次
+     * @param: [type]
+     * @return: void
+     * @author Ll
+     * @date: 2024/7/22 下午3:56
+     */
+    private void saveInteractSchedule(String type){
+        if(!state.getOrDefault(type,false)){
+            state.put(type,true);
+            service.schedule(() -> {
+                this.saveInteract(type);
+                state.put(type,false);
+            },3, TimeUnit.SECONDS);
+        }
+    }
+
+    /**
+     * @description: 从缓存中取出相应的状态放入数据库中
+     * @param: [type]
+     * @return: void
+     * @author Ll
+     * @date: 2024/7/22 下午3:43
+     */
+    private void saveInteract(String type){
+        synchronized (type.intern()){
+            List<Interact> check = new LinkedList<>();
+            List<Interact> uncheck = new LinkedList<>();
+            stringRedisTemplate.opsForHash().entries(type).forEach((k,v) -> {
+                if(Boolean.parseBoolean(v.toString())){
+                    check.add(Interact.parseInteract(k.toString(),type));
+                }else{
+                    uncheck.add(Interact.parseInteract(k.toString(),type));
+                }
+            });
+            if(!check.isEmpty()){
+                baseMapper.addInteract(check,type);
+            }
+            if(!uncheck.isEmpty()){
+                baseMapper.deleteInteract(uncheck,type);
+            }
+            stringRedisTemplate.delete(type);
+        }
+    }
+
+    /**
      * @description: 隐私过滤
      * @param: [target, uid]
      * @return: T
@@ -152,9 +221,14 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         Account account = accountMapper.selectById(uid);
         AccountPrivacy accountPrivacy = accountPrivacyMapper.selectById(uid);
         AccountDetails accountDetails = accountDetailsMapper.selectById(uid);
-        String[] hidden = accountPrivacy.hiddenFields();
-        BeanUtils.copyProperties(account,target,hidden);
-        BeanUtils.copyProperties(accountDetails,target,hidden);
+        String[] hidden = null;
+        if (accountPrivacy != null) {
+            hidden = accountPrivacy.hiddenFields();
+        }
+        if (hidden != null) {
+            BeanUtils.copyProperties(account,target,hidden);
+            BeanUtils.copyProperties(accountDetails,target,hidden);
+        }
         return target;
     }
 

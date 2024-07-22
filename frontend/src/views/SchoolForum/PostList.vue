@@ -64,6 +64,13 @@ function resetList(){
   updateList()
 }
 
+function avatarUrl(avatar){
+  if(avatar){
+    return `${axios.defaults.baseURL}/images${avatar}`
+  }else
+    return "https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"
+}
+
 navigator.geolocation.getCurrentPosition(position => {
       const lon = position.coords.longitude
       const lat = position.coords.latitude
@@ -126,7 +133,7 @@ get(`/api/forum/get-ip`,(data)=>ip.value=data)
                         @click="router.push('/index/topic-detail/'+item.id)">
               <div style="display: flex">
                 <div>
-                  <el-avatar :size="30" :src="`${axios.defaults.baseURL}/images${item.avatar}`"></el-avatar>
+                  <el-avatar :size="30" :src="avatarUrl(item.avatar)"></el-avatar>
                 </div>
                 <div style="margin-left: 7px;transform: translateY(-2px)">
                   <div>{{item.username}}</div>

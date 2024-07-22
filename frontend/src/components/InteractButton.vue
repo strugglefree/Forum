@@ -1,4 +1,4 @@
-<script setup>
+ <script setup>
 defineProps({
   name:String,
   checkName:String,
@@ -14,7 +14,7 @@ const emit=defineEmits(['check'])
       <slot/>
     </span>
     <span class="name" :style="{'color':color}">
-      {{check?checkName:name}}
+      {{check ? checkName : name}}
     </span>
   </div>
 </template>

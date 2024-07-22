@@ -3,16 +3,20 @@ import {useRoute} from "vue-router";
 import {get} from "@/net";
 import axios from "axios";
 import {reactive} from "vue";
-import {ArrowLeft, Female, Male} from "@element-plus/icons-vue";
+import {ArrowLeft, Female, Male, StarFilled, Sugar} from "@element-plus/icons-vue";
 import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
 import Card from "@/components/Card.vue";
 import router from "@/router";
 import TopicTag from "@/components/TopicTag.vue";
+import InteractButton from "@/components/InteractButton.vue";
+import {ElMessage} from "element-plus";
 
 const route = useRoute()
 const tid = route.params.tid
 const topic = reactive({
   data:null,
+  like: false,
+  collect: false,
   comment:[]
 })
 
@@ -26,6 +30,20 @@ function convertToHtml(content) {
   return converter.convert();
 }
 
+function avatarUrl(avatar){
+  if(avatar){
+    return `${axios.defaults.baseURL}/images${avatar}`
+  }else
+    return "https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"
+}
+
+function interact(type , message){
+  get(`/api/forum/interact?tid=${tid}&type=${type}&state=${!topic[type]}`,()=>{
+    topic[type] = !topic[type]
+    if(topic[type]) ElMessage.success(`${message}成功`)
+    else ElMessage.success(`已取消${message}`)
+  })
+}
 </script>
 
 <template>
@@ -43,7 +61,7 @@ function convertToHtml(content) {
     </div>
     <div class="topic-main">
       <div class="topic-main-left">
-        <el-avatar :size="60" :src="`${axios.defaults.baseURL}/images${topic.data.user.avatar}`"></el-avatar>
+        <el-avatar :size="60" :src="avatarUrl(topic.data.user.avatar)"></el-avatar>
         <div>
           <div style="font-size: 18px;font-weight: bold">
             {{topic.data.user.username}}
@@ -56,9 +74,9 @@ function convertToHtml(content) {
         </div>
         <el-divider style="margin: 10px 0"/>
         <div style="text-align: left;margin: 0 5px">
-          <div class="desc">微信(wechat):{{topic.data.user.wx}}</div>
-          <div class="desc">QQ:{{topic.data.user.qq}}</div>
-          <div class="desc">手机号:{{topic.data.user.phone}}</div>
+          <div class="desc">微信:{{topic.data.user.wx || " 已隐藏或未填写"}}</div>
+          <div class="desc">QQ:{{topic.data.user.qq || " 已隐藏或未填写"}}</div>
+          <div class="desc">手机号:{{topic.data.user.phone || " 已隐藏或未填写"}}</div>
         </div>
         <el-divider style="margin: 10px 0"/>
         <div class="desc" style="margin: 0 5px">
@@ -67,8 +85,17 @@ function convertToHtml(content) {
         </div>
       </div>
       <div class="topic-main-right">
-        <div class="topic-content" v-html="convertToHtml(topic.data.content)">
-
+        <div class="topic-content" v-html="convertToHtml(topic.data.content)"></div>
+        <div style="margin-top: 30px;text-align: end">
+          <interact-button name="点个赞吧" check-name="已点赞" color="#C2757F" :check="topic.like"
+                           @check="interact('like', '点赞')">
+            <el-icon><Sugar /></el-icon>
+          </interact-button>
+          <interact-button name="收藏本帖" check-name="已收藏" color="orange" :check="topic.collect"
+                           @check="interact('collect', '收藏')"
+                           style="margin-left: 20px">
+            <el-icon><StarFilled /></el-icon>
+          </interact-button>
         </div>
       </div>
     </div>
