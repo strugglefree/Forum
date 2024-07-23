@@ -13,6 +13,7 @@ import {ElMessage} from "element-plus";
 
 const route = useRoute()
 const tid = route.params.tid
+
 const topic = reactive({
   data:null,
   like: false,
@@ -22,6 +23,8 @@ const topic = reactive({
 
 get(`/api/forum/topic?tid=${tid}`,data=>{
   topic.data=data
+  topic.like=data.interact.like
+  topic.collect=data.interact.collect
 })
 
 function convertToHtml(content) {
@@ -86,7 +89,11 @@ function interact(type , message){
       </div>
       <div class="topic-main-right">
         <div class="topic-content" v-html="convertToHtml(topic.data.content)"></div>
-        <div style="margin-top: 30px;text-align: end">
+        <el-divider/>
+        <div style="position: absolute;bottom: 0;left: 0;font-size: 12px;color: grey">
+          <div style="margin: 0 0 5px 8px ">发帖时间: {{new Date(topic.data.time).toLocaleString()}}</div>
+        </div>
+        <div style="margin: 0 8px 5px 0;right: 0;bottom: 0;position: absolute">
           <interact-button name="点个赞吧" check-name="已点赞" color="#C2757F" :check="topic.like"
                            @check="interact('like', '点赞')">
             <el-icon><Sugar /></el-icon>
@@ -133,6 +140,7 @@ function interact(type , message){
   .topic-main-right{
     padding: 10px 20px;
     width: 600px;
+    position: relative;
 
     .topic-content{
       font-size: 14px;

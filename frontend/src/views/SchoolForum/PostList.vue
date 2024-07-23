@@ -1,7 +1,19 @@
 <script setup>
 
 import LightCard from "@/components/LightCard.vue";
-import {Clock, Compass, Connection, Document, Edit, EditPen, Guide, Microphone, Sunrise, Picture} from "@element-plus/icons-vue";
+import {
+  Clock,
+  Compass,
+  Connection,
+  Document,
+  Edit,
+  EditPen,
+  Guide,
+  Microphone,
+  Sunrise,
+  Picture,
+  Sugar, StarFilled, Star, ArrowRightBold
+} from "@element-plus/icons-vue";
 import Weather from "@/components/Weather.vue";
 import {computed, reactive, ref, watch} from "vue";
 import {get} from "@/net";
@@ -12,6 +24,7 @@ import axios from "axios";
 import ColorDot from "@/components/ColorDot.vue";
 import router from "@/router";
 import TopicTag from "@/components/TopicTag.vue";
+import CollectedTopic from "@/components/CollectedTopic.vue";
 
 const store = useStore()
 const topics = reactive({
@@ -93,6 +106,8 @@ navigator.geolocation.getCurrentPosition(position => {
 )
 const ip = ref("")
 get(`/api/forum/get-ip`,(data)=>ip.value=data)
+
+const collects = ref(false)
 </script>
 
 <template>
@@ -151,6 +166,14 @@ get(`/api/forum/get-ip`,(data)=>ip.value=data)
               <div style="display: grid;grid-template-columns: repeat(3,1fr);grid-gap: 10px">
                 <el-image class="topic-image" v-for="img in item.image" :src="img" fit="cover"></el-image>
               </div>
+              <div style="display: flex;gap: 20px;font-size: 13px;margin-top: 10px;opacity: 0.8">
+                <div>
+                  <el-icon style="vertical-align: middle"><Sugar /></el-icon>{{item.like}}点赞
+                </div>
+                <div>
+                  <el-icon style="vertical-align: middle"><StarFilled /></el-icon>{{item.collect}}收藏
+                </div>
+              </div>
             </light-card>
           </div>
         </div>
@@ -159,6 +182,15 @@ get(`/api/forum/get-ip`,(data)=>ip.value=data)
     <div style="width: 300px">
       <div style="position: sticky;top: 20px">
         <light-card>
+          <div class="collect-list-button" @click="collects = true">
+            <div>
+              <el-icon><Star/></el-icon>
+              <span style="margin-left: 5px;">查看我的收藏</span>
+            </div>
+            <el-icon><ArrowRightBold /></el-icon>
+          </div>
+        </light-card>
+        <light-card style="margin-top: 10px">
           <div style="font-weight: bold;">
             <el-icon><Guide /></el-icon>
             论坛公告
@@ -204,13 +236,25 @@ get(`/api/forum/get-ip`,(data)=>ip.value=data)
           </div>
         </div>
       </div>
-
     </div>
     <topic-editor :show="editor" @close="editor = false" @created="onTopicCreate"></topic-editor>
+    <collected-topic :show="collects" @close="collects = false"></collected-topic>
   </div>
 </template>
 
 <style lang="less" scoped>
+.collect-list-button{
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  transition: .3s;
+
+  &:hover{
+    cursor: pointer;
+    opacity: 0.6;
+  }
+}
+
 .top-topic{
   display: flex;
 

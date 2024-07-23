@@ -93,4 +93,9 @@ public class ForumController {
         topicService.interact(new Interact(tid,id,new Date(),type),state);
         return RestBean.success();
     }
+
+    @GetMapping("/collect")
+    public RestBean<List<TopicPreviewVO>> collect(@RequestAttribute(Const.ATTR_USER_ID) int uid){
+        return RestBean.success(topicService.getCollectionTopic(uid));
+    }
 }

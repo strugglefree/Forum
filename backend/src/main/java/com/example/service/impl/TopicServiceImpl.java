@@ -142,9 +142,27 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         TopicDetailsVO vo = new TopicDetailsVO();
         Topic topic = baseMapper.selectById(tid);
         BeanUtils.copyProperties(topic,vo);
+        TopicDetailsVO.Interact interact = new TopicDetailsVO.Interact(
+                hasInteract(tid,topic.getUid(),"like"),
+                hasInteract(tid,topic.getUid(),"collect")
+        );
+        vo.setInteract(interact);
         TopicDetailsVO.User user = new TopicDetailsVO.User();
         vo.setUser(this.fillUserDetailsByPrivacy(user,topic.getUid()));
         return vo;
+    }
+    /**
+     * @description: 先查看缓存中有没有数据，没有则看数据库。(查是否发生了交互 )
+     * @param: [tid, uid, type]
+     * @return: boolean
+     * @author Ll
+     * @date: 2024/7/23 下午12:43
+     */
+    private boolean hasInteract(int tid , int uid , String type){
+        String key = tid + ":" + uid;
+        if(Boolean.TRUE.equals(stringRedisTemplate.hasKey(key)))
+            return Boolean.parseBoolean(stringRedisTemplate.opsForHash().entries(key).get(type).toString());
+        return baseMapper.userInteractCount(type,tid,uid) > 0 ;
     }
 
     /**
@@ -161,6 +179,26 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
             stringRedisTemplate.opsForHash().put(type,interact.toKey(),Boolean.toString(state));
             this.saveInteractSchedule(type);
         }
+    }
+
+    /**
+     * @description: 获取收藏的帖子
+     * @param: [uid]
+     * @return: java.util.List<com.example.entity.vo.response.TopicPreviewVO>
+     * @author Ll
+     * @date: 2024/7/23 下午3:40
+     */
+    @Override
+    public List<TopicPreviewVO> getCollectionTopic(int uid) {
+        return baseMapper.collectTopics(uid)
+                .stream()
+                .map(topic -> {
+                    TopicPreviewVO vo = new TopicPreviewVO();
+                    if(topic.getContent() == null) return null;
+                    BeanUtils.copyProperties(topic, vo);
+                    return vo;
+                })
+                .toList();
     }
 
     private final Map<String,Boolean> state = new HashMap<>(); //存储状态
@@ -243,6 +281,8 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         TopicPreviewVO vo = new TopicPreviewVO();
         BeanUtils.copyProperties(accountMapper.selectById(topic.getUid()),vo);
         BeanUtils.copyProperties(topic,vo);
+        vo.setLike(baseMapper.interactCount("like",topic.getId()));
+        vo.setCollect(baseMapper.interactCount("collect",topic.getId()));
         List<String> images = new ArrayList<>();
         StringBuilder previewText = new StringBuilder();
         JSONArray ops = JSONObject.parseObject(topic.getContent()).getJSONArray("ops");
