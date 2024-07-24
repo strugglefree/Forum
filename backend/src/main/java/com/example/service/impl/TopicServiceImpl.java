@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.entity.dto.*;
 import com.example.entity.vo.request.TopicCreateVO;
+import com.example.entity.vo.request.TopicUpdateVO;
 import com.example.entity.vo.response.TopTopicVO;
 import com.example.entity.vo.response.TopicDetailsVO;
 import com.example.entity.vo.response.TopicPreviewVO;
@@ -138,13 +139,13 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
      * @date: 2024/7/21 下午3:47
      */
     @Override
-    public TopicDetailsVO getTopicDetails(int tid) {
+    public TopicDetailsVO getTopicDetails(int tid,int uid) {
         TopicDetailsVO vo = new TopicDetailsVO();
         Topic topic = baseMapper.selectById(tid);
         BeanUtils.copyProperties(topic,vo);
         TopicDetailsVO.Interact interact = new TopicDetailsVO.Interact(
-                hasInteract(tid,topic.getUid(),"like"),
-                hasInteract(tid,topic.getUid(),"collect")
+                hasInteract(tid,uid,"like"),
+                hasInteract(tid,uid,"collect")
         );
         vo.setInteract(interact);
         TopicDetailsVO.User user = new TopicDetailsVO.User();
@@ -199,6 +200,30 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
                     return vo;
                 })
                 .toList();
+    }
+
+
+    /**
+     * @description: 更新帖子内容
+     * @param: [vo, uid]
+     * @return: String
+     * @author Ll
+     * @date: 2024/7/24 下午12:26
+     */
+    @Override
+    public String updateTopic(TopicUpdateVO vo, int uid) {
+        if (!this.textLimitCheck(vo.getContent())){
+            return "您输入的字符超出字数限制了，请做部分精简";
+        }
+        if(!type.contains(vo.getType())){ return "非法类型！"; }
+        baseMapper.update(null,Wrappers.<Topic>update()
+                .eq("uid",uid)
+                .eq("id",vo.getId())
+                .set("title",vo.getTitle())
+                .set("type",vo.getType())
+                .set("content",vo.getContent().toString())
+        );
+        return null;
     }
 
     private final Map<String,Boolean> state = new HashMap<>(); //存储状态
