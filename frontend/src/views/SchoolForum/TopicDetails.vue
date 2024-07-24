@@ -3,7 +3,7 @@ import {useRoute} from "vue-router";
 import {get, post} from "@/net";
 import axios from "axios";
 import {reactive, ref} from "vue";
-import {ArrowLeft, EditPen, Female, Male, StarFilled, Sugar} from "@element-plus/icons-vue";
+import {ArrowLeft, EditPen, Female, Male, Plus, StarFilled, Sugar} from "@element-plus/icons-vue";
 import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
 import Card from "@/components/Card.vue";
 import router from "@/router";
@@ -12,19 +12,23 @@ import InteractButton from "@/components/InteractButton.vue";
 import {ElMessage} from "element-plus";
 import {useStore} from "@/store";
 import TopicEditor from "@/components/TopicEditor.vue";
+import TopicCommentEditor from "@/components/TopicCommentEditor.vue";
 
 const route = useRoute()
 const tid = route.params.tid
 const edit = ref(false)
 const store = useStore();
-
+const comment = reactive({
+  show: false,
+  text: '',
+  quote: -1
+})
 const topic = reactive({
   data:null,
   like: false,
   collect: false,
   comment:[]
 })
-
 const init = () => get(`/api/forum/topic?tid=${tid}`,data=>{
   topic.data=data
   topic.like=data.interact.like
@@ -132,11 +136,35 @@ function updateTopic(editor){
     <div>
       <topic-editor :show="edit" @close="edit = false" v-if="topic.data" submit-button = '更新贴子内容' :submit="updateTopic"
                           :default-type = store.findTypeById(topic.data.type)  :default-text = topic.data.content :default-title = topic.data.title />
+      <topic-comment-editor :show="comment.show" @close="comment.show=false" :tid="tid"
+                            :quote="comment.quote"/>
+      <div class="add-comment" @click="comment.show = true">
+        <el-icon><Plus/></el-icon>
+      </div>
     </div>
   </div>
 </template>
 
-<style scoped>
+<style lang="less" scoped>
+.add-comment{
+  position: fixed;
+  border-radius: 50%;
+  height: 40px;
+  width: 40px;
+  right: 20px;
+  bottom: 20px;
+  font-size: 18px;
+  text-align: center;
+  line-height: 45px;
+  color: var(--el-color-primary);
+  background-color: var(--el-bg-color-overlay);
+  box-shadow: var(--el-box-shadow-lighter);
+
+  &:hover{
+    cursor: pointer;
+    border-color: var(--el-border-color-extra-light);
+  }
+}
 .topic-page{
   display: flex;
   flex-direction: column;

@@ -198,7 +198,7 @@ const deltaLength = computed(() => deltaToText(editor.text).length)
   </div>
 </template>
 
-<style scoped>
+<style lang="less" scoped>
 :deep(.el-drawer){
   width: 800px;
   margin: auto;
@@ -206,19 +206,5 @@ const deltaLength = computed(() => deltaToText(editor.text).length)
 }
 :deep(.el-drawer__header){
   margin: 0;
-}
-:deep(.ql-toolbar){
-  border-radius: 5px 5px 0 0;
-  border-color: var(--el-border-color);
-}
-:deep(.ql-container){
-  border-radius: 0 0 5px 5px;
-  border-color: var(--el-border-color);
-}
-:deep(.ql-editor){
-  font-size: 14px;
-}
-:deep(.ql-editor.ql-blank::before){
-  color: var(--el-text-color-placeholder);
 }
 </style>

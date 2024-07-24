@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.entity.dto.*;
+import com.example.entity.vo.request.AddCommentVO;
 import com.example.entity.vo.request.TopicCreateVO;
 import com.example.entity.vo.request.TopicUpdateVO;
 import com.example.entity.vo.response.TopTopicVO;
@@ -50,6 +51,8 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     private AccountPrivacyMapper accountPrivacyMapper;
     @Resource
     private StringRedisTemplate stringRedisTemplate;
+    @Resource
+    private TopicCommentMapper topicCommentMapper;
 
     @PostConstruct
     public void init() {
@@ -72,7 +75,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
      */
     @Override
     public String createTopic(TopicCreateVO vo, int uid) {
-        if (!this.textLimitCheck(vo.getContent())){
+        if (this.textLimitCheck(vo.getContent(),20000)){
             return "您输入的字符超出字数限制了，请做部分精简";
         }
         if(!type.contains(vo.getType())){ return "非法类型！"; }
@@ -212,7 +215,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
      */
     @Override
     public String updateTopic(TopicUpdateVO vo, int uid) {
-        if (!this.textLimitCheck(vo.getContent())){
+        if (this.textLimitCheck(vo.getContent(),20000)){
             return "您输入的字符超出字数限制了，请做部分精简";
         }
         if(!type.contains(vo.getType())){ return "非法类型！"; }
@@ -223,6 +226,30 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
                 .set("type",vo.getType())
                 .set("content",vo.getContent().toString())
         );
+        return null;
+    }
+
+    /**
+     * @description: 创建评论
+     * @param: [vo, uid]
+     * @return: java.lang.String
+     * @author Ll
+     * @date: 2024/7/24 下午3:19
+     */
+    @Override
+    public String createComment(AddCommentVO vo, int uid) {
+        String key = Const.FORUM_TOPIC_COMMENT_COUNTER + uid;
+        if(flowUtils.limitPeriodCountCheck(key, 3, 60)){
+            return "您发言过于频繁，请稍后再试...";
+        }
+        if (this.textLimitCheck(JSONObject.parseObject(vo.getContent()),2000)){
+            return "您输入的字符超出字数限制了，请做部分精简";
+        }
+        TopicComment comment = new TopicComment();
+        BeanUtils.copyProperties(vo,comment);
+        comment.setUid(uid);
+        comment.setTime(new Date());
+        topicCommentMapper.insert(comment);
         return null;
     }
 
@@ -327,18 +354,18 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     /**
      * @description: 检查是否超出字符限制
-     * @param: [text]
+     * @param: [text,max]
      * @return: boolean
      * @author Ll
      * @date: 2024/7/19 下午3:10
      */
-    private boolean textLimitCheck(JSONObject text){
-        if(text == null) return false;
+    private boolean textLimitCheck(JSONObject text ,int max){
+        if(text == null) return true;
         long length = 0;
         for (Object op : text.getJSONArray("ops")) {
             length += JSONObject.from(op).getString("insert").length();
-            if(length>20000) return false;
+            if(length>max) return true;
         }
-        return true;
+        return false;
     }
 }
