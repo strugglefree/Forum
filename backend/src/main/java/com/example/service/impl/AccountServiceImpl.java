@@ -3,8 +3,12 @@ package com.example.service.impl;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.entity.dto.Account;
+import com.example.entity.dto.AccountDetails;
+import com.example.entity.dto.AccountPrivacy;
 import com.example.entity.vo.request.*;
+import com.example.mapper.AccountDetailsMapper;
 import com.example.mapper.AccountMapper;
+import com.example.mapper.AccountPrivacyMapper;
 import com.example.service.AccountService;
 import com.example.utils.Const;
 import com.example.utils.FlowUtils;
@@ -41,6 +45,12 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
 
     @Resource
     PasswordEncoder passwordEncoder;
+
+    @Resource
+    AccountPrivacyMapper accountPrivacyMapper;
+
+    @Resource
+    AccountDetailsMapper accountDetailsMapper;
 
     /**
      * @description:  验证账户信息
@@ -120,6 +130,10 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
         Account account = new Account(null, username, password, email, Const.ROLE_DEFAULT, new Date(),null);
         if(this.save(account)) {
             this.deleteEmailCode(email);//删除Redis存储的验证码
+            accountPrivacyMapper.insert(new AccountPrivacy(account.getId()));
+            AccountDetails details = new AccountDetails();
+            details.setId(account.getId());
+            accountDetailsMapper.insert(details);
             return null;
         }
         else return "内部错误，请联系管理员";
