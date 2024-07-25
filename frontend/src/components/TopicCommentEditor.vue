@@ -11,8 +11,9 @@ const props = defineProps({
   quote:Number
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close','comment'])
 const content = ref()
+const init = () => content.value = new Delta()
 
 function comment(){
   post(`/api/forum/add-comment`,{
@@ -21,15 +22,16 @@ function comment(){
     content: JSON.stringify(content.value)
   },()=>{
     ElMessage.success("发表评论成功")
-    emit("close")
+    emit("comment")
   })
 }
+
 </script>
 
 <template>
   <div>
     <el-drawer :model-value="show"
-               title="评论"
+               title="评论" @open="init"
                @close="emit('close')"
                direction="btt" :size="270"
                :close-on-click-modal="false"

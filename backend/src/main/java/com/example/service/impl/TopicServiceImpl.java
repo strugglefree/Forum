@@ -9,6 +9,7 @@ import com.example.entity.dto.*;
 import com.example.entity.vo.request.AddCommentVO;
 import com.example.entity.vo.request.TopicCreateVO;
 import com.example.entity.vo.request.TopicUpdateVO;
+import com.example.entity.vo.response.CommentVO;
 import com.example.entity.vo.response.TopTopicVO;
 import com.example.entity.vo.response.TopicDetailsVO;
 import com.example.entity.vo.response.TopicPreviewVO;
@@ -27,6 +28,7 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -153,6 +155,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         vo.setInteract(interact);
         TopicDetailsVO.User user = new TopicDetailsVO.User();
         vo.setUser(this.fillUserDetailsByPrivacy(user,topic.getUid()));
+        vo.setComments(topicCommentMapper.selectCount(Wrappers.<TopicComment>query().eq("tid",tid)));
         return vo;
     }
     /**
@@ -253,6 +256,27 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         return null;
     }
 
+    @Override
+    public List<CommentVO> getComments(int tid, int page) {
+        Page<TopicComment> p = Page.of(page,10);
+        topicCommentMapper.selectPage(p,Wrappers.<TopicComment>query().eq("tid",tid));
+        return p.getRecords().stream().map((obj)->{
+            CommentVO vo = new CommentVO();
+            BeanUtils.copyProperties(obj,vo);
+            if(obj.getQuote()>0) {
+                JSONObject text = JSONObject.parseObject(
+                        topicCommentMapper.selectOne(Wrappers.<TopicComment>query().eq("id",obj.getId()).orderByAsc("time")).getContent()
+                );
+                StringBuilder builder = new StringBuilder();
+                this.decreaseContent(text.getJSONArray("ops"),builder,(ignore)->{});
+                vo.setContent(builder.toString());
+            }
+            CommentVO.User user = new CommentVO.User();
+            vo.setUser(this.fillUserDetailsByPrivacy(user,obj.getUid()));
+            return vo;
+        }).toList();
+    }
+
     private final Map<String,Boolean> state = new HashMap<>(); //存储状态
     ScheduledExecutorService service = Executors.newScheduledThreadPool(2);//具有两个线程池，用于调度任务
     /**
@@ -338,18 +362,29 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         List<String> images = new ArrayList<>();
         StringBuilder previewText = new StringBuilder();
         JSONArray ops = JSONObject.parseObject(topic.getContent()).getJSONArray("ops");
+        this.decreaseContent(ops,previewText,(v) -> images.add(v.toString()));
+        vo.setContent(previewText.length() > 300 ? previewText.substring(0,300) : String.valueOf(previewText));
+        vo.setImage(images);
+        return vo;
+    }
+
+    /**
+     * @description:  减少展示的内容
+     * @param: [ops, previewText, imageHandle]
+     * @return: void
+     * @author Ll
+     * @date: 2024/7/25 下午12:30
+     */
+    private void decreaseContent(JSONArray ops, StringBuilder previewText, Consumer<Object> imageHandle){
         for(Object op : ops){
             Object insert = JSONObject.from(op).get("insert");
             if(insert instanceof String text){
                 if(previewText.length() >= 300) continue;
                 previewText.append(text);
             }else if(insert instanceof Map<?,?> map){
-                Optional.ofNullable(map.get("image")).ifPresent((v) -> images.add(v.toString()));
+                Optional.ofNullable(map.get("image")).ifPresent(imageHandle);
             }
         }
-        vo.setContent(previewText.length() > 300 ? previewText.substring(0,300) : String.valueOf(previewText));
-        vo.setImage(images);
-        return vo;
     }
 
     /**

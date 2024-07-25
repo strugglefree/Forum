@@ -114,4 +114,9 @@ public class ForumController {
         return controllerUtils.messageHandle(() -> topicService.createComment(vo, uid));
     }
 
+    @GetMapping("/comments")
+    public RestBean<List<CommentVO>> getComments(@RequestParam @Min(1) int tid,
+                                                 @RequestParam @Min(0) int page){
+        return RestBean.success(topicService.getComments(tid,page+1));
+    }
 }

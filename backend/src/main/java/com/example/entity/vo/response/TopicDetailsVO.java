@@ -19,6 +19,7 @@ public class TopicDetailsVO {
     private Date time;
     User user;
     Interact interact;
+    long comments;
 
     @Data
     @AllArgsConstructor

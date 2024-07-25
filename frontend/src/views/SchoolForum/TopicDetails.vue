@@ -27,12 +27,14 @@ const topic = reactive({
   data:null,
   like: false,
   collect: false,
-  comment:[]
+  comment: null,
+  page: 1,
 })
 const init = () => get(`/api/forum/topic?tid=${tid}`,data=>{
   topic.data=data
   topic.like=data.interact.like
   topic.collect=data.interact.collect
+  loadComments(1)
 })
 
 init();
@@ -69,6 +71,19 @@ function updateTopic(editor){
     edit.value = false
     init()
   },message => ElMessage.warning(message))
+}
+
+function loadComments(page){
+  topic.comment = null
+  topic.page = page
+  get(`/api/forum/comments?tid=${tid}&page=${page-1}`,data=>{
+    topic.comment = data
+  })
+}
+
+function onCommentAdd(){
+  comment.show = false
+  loadComments(Math.floor(topic.data.comments / 10) + 1);
 }
 </script>
 
@@ -133,11 +148,48 @@ function updateTopic(editor){
         </div>
       </div>
     </div>
+    <transition name="el-fade-in-linear" mode="out-in">
+      <div v-if="topic.comment">
+        <div class="topic-main" style="margin-top: 10px;" v-for="item in topic.comment">
+          <div class="topic-main-left">
+            <el-avatar :size="60" :src="avatarUrl(item.user.avatar)"></el-avatar>
+            <div>
+              <div style="font-size: 18px;font-weight: bold">
+                {{item.user.username}}
+                <span style="color: hotpink" v-if="item.user.gender === 0"
+                ><el-icon><Female/></el-icon></span>
+                <span style="color: dodgerblue" v-if="item.user.gender === 1"
+                ><el-icon><Male/></el-icon></span>
+              </div>
+              <div class="desc">{{item.user.email}}</div>
+            </div>
+            <el-divider style="margin: 10px 0"/>
+            <div style="text-align: left;margin: 0 5px">
+              <div class="desc">微信:{{item.user.wx || " 已隐藏或未填写"}}</div>
+              <div class="desc">QQ:{{item.user.qq || " 已隐藏或未填写"}}</div>
+              <div class="desc">手机号:{{item.user.phone || " 已隐藏或未填写"}}</div>
+            </div>
+          </div>
+          <div class="topic-main-right">
+            <div style="font-size: 12px;color: grey">
+              <div style="margin: 6px 0 ">评论时间: {{new Date(item.time).toLocaleString()}}</div>
+            </div>
+            <div class="topic-content" v-html="convertToHtml(item.content)"></div>
+          </div>
+        </div>
+        <div style="margin: 20px auto;width: fit-content">
+          <el-pagination background v-model:current-page="topic.page"
+                          layout="prev, pager, next" @current-change="loadComments"
+                          :total="topic.data.comments" :page-size="10"
+                          hide-on-single-page/>
+        </div>
+      </div>
+    </transition>
     <div>
       <topic-editor :show="edit" @close="edit = false" v-if="topic.data" submit-button = '更新贴子内容' :submit="updateTopic"
                           :default-type = store.findTypeById(topic.data.type)  :default-text = topic.data.content :default-title = topic.data.title />
       <topic-comment-editor :show="comment.show" @close="comment.show=false" :tid="tid"
-                            :quote="comment.quote"/>
+                            :quote="comment.quote" @comment="onCommentAdd"/>
       <div class="add-comment" @click="comment.show = true">
         <el-icon><Plus/></el-icon>
       </div>
