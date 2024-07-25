@@ -1,5 +1,5 @@
 <script setup>
-import {Delta, Quill, QuillEditor} from "@vueup/vue-quill";
+import {Delta, QuillEditor} from "@vueup/vue-quill";
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import {ref} from "vue";
 import {post} from "@/net";
@@ -8,7 +8,7 @@ import {ElMessage} from "element-plus";
 const props = defineProps({
   show: Boolean,
   tid: String,
-  quote:Number
+  quote: Object
 })
 
 const emit = defineEmits(['close','comment'])
@@ -16,9 +16,13 @@ const content = ref()
 const init = () => content.value = new Delta()
 
 function comment(){
+  if (deltaToText(content.value).length > 2000) {
+    ElMessage.warning("评论字数过多！")
+    return
+  }
   post(`/api/forum/add-comment`,{
     tid: props.tid,
-    quote: props.quote,
+    quote: props.quote ? props.quote.id : -1,
     content: JSON.stringify(content.value)
   },()=>{
     ElMessage.success("发表评论成功")
@@ -26,12 +30,26 @@ function comment(){
   })
 }
 
+function deltaToSimpleText(delta){
+  let str = deltaToText(JSON.parse(delta))
+  if(str.length > 35){ str = str.substring(0,35) }
+  return str;
+}
+
+function deltaToText(delta){
+  if (!delta?.ops) return ''
+  let str = ""
+  for(let op of delta.ops)
+    str+=op.insert
+  return str.replace(/\s/g,"")
+}
 </script>
 
 <template>
   <div>
     <el-drawer :model-value="show"
-               title="评论" @open="init"
+               :title="quote ? `对评论: ${deltaToSimpleText(quote.content)}的回复` : '评论一条'"
+               @open="init"
                @close="emit('close')"
                direction="btt" :size="270"
                :close-on-click-modal="false"
@@ -40,7 +58,10 @@ function comment(){
         <div>
           <quill-editor style="height: 120px;" v-model:content="content" placeholder="发言时注意文明用语哦~"/>
         </div>
-        <div style="margin-top: 10px;text-align: right">
+        <div style="margin-top: 10px;display: flex">
+          <div style="font-size: 13px;color: grey;flex: 1">
+            字数统计: {{deltaToText(content).length}}(最大支持2000字)
+          </div>
           <el-button type="success" @click="comment">发表评论</el-button>
         </div>
       </div>

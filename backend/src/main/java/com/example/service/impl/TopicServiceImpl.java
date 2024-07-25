@@ -255,7 +255,13 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         topicCommentMapper.insert(comment);
         return null;
     }
-
+    /**
+     * @description: 获取评论
+     * @param: [tid, page]
+     * @return: java.util.List<com.example.entity.vo.response.CommentVO>
+     * @author Ll
+     * @date: 2024/7/25 下午2:33
+     */
     @Override
     public List<CommentVO> getComments(int tid, int page) {
         Page<TopicComment> p = Page.of(page,10);
@@ -264,12 +270,15 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
             CommentVO vo = new CommentVO();
             BeanUtils.copyProperties(obj,vo);
             if(obj.getQuote()>0) {
-                JSONObject text = JSONObject.parseObject(
-                        topicCommentMapper.selectOne(Wrappers.<TopicComment>query().eq("id",obj.getId()).orderByAsc("time")).getContent()
-                );
-                StringBuilder builder = new StringBuilder();
-                this.decreaseContent(text.getJSONArray("ops"),builder,(ignore)->{});
-                vo.setContent(builder.toString());
+                TopicComment comment = topicCommentMapper.selectOne(Wrappers.<TopicComment>query()
+                        .eq("id", obj.getQuote()).orderByAsc("time"));
+                if(comment != null) {
+                    JSONObject text = JSONObject.parseObject(comment.getContent());
+                    StringBuilder builder = new StringBuilder();
+                    this.decreaseContent(text.getJSONArray("ops"),builder,(ignore)->{});
+                    vo.setQuote(builder.toString());
+                }else
+                    vo.setQuote("此评论已被删除");
             }
             CommentVO.User user = new CommentVO.User();
             vo.setUser(this.fillUserDetailsByPrivacy(user,obj.getUid()));
@@ -277,8 +286,21 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         }).toList();
     }
 
+    /**
+     * @description: 删除对应的评论
+     * @param: [cid, uid]
+     * @return: void
+     * @author Ll
+     * @date: 2024/7/25 下午2:57
+     */
+    @Override
+    public void deleteComment(int cid, int uid) {
+        topicCommentMapper.delete(Wrappers.<TopicComment>query().eq("id",cid).eq("uid",uid));
+    }
+
     private final Map<String,Boolean> state = new HashMap<>(); //存储状态
     ScheduledExecutorService service = Executors.newScheduledThreadPool(2);//具有两个线程池，用于调度任务
+
     /**
      * @description: 将缓存区的数据控制在3秒提交到数据库一次
      * @param: [type]

@@ -3,7 +3,7 @@ import {useRoute} from "vue-router";
 import {get, post} from "@/net";
 import axios from "axios";
 import {reactive, ref} from "vue";
-import {ArrowLeft, EditPen, Female, Male, Plus, StarFilled, Sugar} from "@element-plus/icons-vue";
+import {ArrowLeft, ChatSquare, Delete, EditPen, Female, Male, Plus, StarFilled, Sugar} from "@element-plus/icons-vue";
 import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
 import Card from "@/components/Card.vue";
 import router from "@/router";
@@ -21,7 +21,7 @@ const store = useStore();
 const comment = reactive({
   show: false,
   text: '',
-  quote: -1
+  quote: null
 })
 const topic = reactive({
   data:null,
@@ -84,6 +84,13 @@ function loadComments(page){
 function onCommentAdd(){
   comment.show = false
   loadComments(Math.floor(topic.data.comments / 10) + 1);
+}
+
+function deleteComment(id){
+  get(`api/forum/delete-comment?cid=${id}`,()=>{
+    ElMessage.success("删除评论成功")
+    loadComments(topic.page)
+  })
 }
 </script>
 
@@ -174,7 +181,16 @@ function onCommentAdd(){
             <div style="font-size: 12px;color: grey">
               <div style="margin: 6px 0 ">评论时间: {{new Date(item.time).toLocaleString()}}</div>
             </div>
+            <div v-if="item.quote" class="comment-quote">
+              回复: {{item.quote}}
+            </div>
             <div class="topic-content" v-html="convertToHtml(item.content)"></div>
+            <div style="text-align: right">
+              <el-link :icon="ChatSquare" @click="comment.show = true; comment.quote = item"
+                       type="info" :underline="false">&nbsp;回复评论</el-link>
+              <el-link :icon="Delete" @click="deleteComment(item.id)" type="danger" style="margin-left: 20px"
+              v-if="item.user.id === store.user.id" :underline="false">&nbsp;删除评论</el-link>
+            </div>
           </div>
         </div>
         <div style="margin: 20px auto;width: fit-content">
@@ -190,7 +206,7 @@ function onCommentAdd(){
                           :default-type = store.findTypeById(topic.data.type)  :default-text = topic.data.content :default-title = topic.data.title />
       <topic-comment-editor :show="comment.show" @close="comment.show=false" :tid="tid"
                             :quote="comment.quote" @comment="onCommentAdd"/>
-      <div class="add-comment" @click="comment.show = true">
+      <div class="add-comment" @click="comment.show = true;comment.quote = null">
         <el-icon><Plus/></el-icon>
       </div>
     </div>
@@ -198,6 +214,15 @@ function onCommentAdd(){
 </template>
 
 <style lang="less" scoped>
+.comment-quote {
+  font-size: 13px;
+  color: grey;
+  background-color: rgba(94, 94, 94, 0.1);
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 5px;
+}
+
 .add-comment{
   position: fixed;
   border-radius: 50%;
