@@ -16,7 +16,7 @@ import {
 } from "@element-plus/icons-vue";
 import Weather from "@/components/Weather.vue";
 import {computed, reactive, ref, watch} from "vue";
-import {get} from "@/net";
+import {get, post} from "@/net";
 import {ElMessage} from "element-plus";
 import TopicEditor from "@/components/TopicEditor.vue";
 import {useStore} from "@/store";
@@ -54,15 +54,15 @@ watch(() => topics.type ,() => {
   resetList()
 },{immediate:true})
 function updateList(){
-  if(topics.end) return;
-  get(`/api/forum/list-topic?type=${topics.type}&page=${topics.page}`,(data) => {
-    if(data){
-      data.forEach((item)=>{topics.list.push(item)});
-      topics.page++
-    }
-    if(!data || data.length < 10){}
-     topics.end=true
-  })
+    if (topics.end) return
+    get(`/api/forum/list-topic?page=${topics.page}&type=${topics.type}`, data => {
+        if (data) {
+            data.forEach(d => topics.list.push(d))
+            topics.page++
+        }
+        if (!data || data.length <10)
+            topics.end = true
+    })
 }
 
 function onTopicCreate(){
@@ -108,6 +108,31 @@ const ip = ref("")
 get(`/api/forum/get-ip`,(data)=>ip.value=data)
 
 const collects = ref(false)
+
+function follow(uid, followUid){
+    post(`/api/follow`,{
+        uid: uid,
+        followUid: followUid
+    },() => {
+        ElMessage.success("关注用户成功！")
+        window.location.reload()
+    },message => ElMessage.warning("关注用户失败！" + message))
+}
+
+function cancelFollow(uid, followUid){
+    post(`/api/follow/cancelFollow`,{
+        uid: uid,
+        followUid: followUid
+    },() => {
+        ElMessage.success("取关用户成功！")
+        window.location.reload()
+    },message => ElMessage.warning("取关用户失败！" + message))
+}
+
+const followList = ref([])
+get(`/api/follow/getFollowList?uid=${store.user.id}`,(data)=>followList.value=data)
+
+
 </script>
 
 <template>
@@ -141,9 +166,9 @@ const collects = ref(false)
         </div>
       </light-card>
       <transition name="el-fade-in" mode="out-in">
-        <div v-if="topics.list">
+        <div v-if="topics.list.length">
           <div style="margin-top: 10px;display: flex;flex-direction: column;gap: 10px"
-               v-if="store.forum.types" v-infinite-scroll="updateList">
+               v-infinite-scroll="updateList">
             <light-card v-for="item in topics.list" class="topic-card"
                         @click="router.push('/index/topic-detail/'+item.id)">
               <div style="display: flex">
@@ -156,6 +181,10 @@ const collects = ref(false)
                     <el-icon><Clock/></el-icon>
                     <div style="margin-left: 2px;display: inline-block;transform: translateY(-2px)">{{new Date(item.time).toLocaleString()}}</div>
                   </div>
+                </div>
+                <div v-if="item.uid!==store.user.id" style="margin-left: auto">
+                  <el-button v-if="followList.includes(item.uid)" @click="cancelFollow(store.user.id,item.uid)"   type="warning" plain round>已关注</el-button>
+                  <el-button v-else @click="follow(store.user.id,item.uid)" type="warning" plain round>关注</el-button>
                 </div>
               </div>
               <div>

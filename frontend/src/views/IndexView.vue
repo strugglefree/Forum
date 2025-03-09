@@ -5,19 +5,20 @@ import router from "@/router";
 import {useStore} from "@/store";
 import {reactive, ref} from "vue";
 import {
-  Bowl,
-  ChatLineRound,
-  Location,
-  MoreFilled,
-  Promotion,
-  School,
-  ShoppingTrolley,
-  Sunny,
-  Search,
-  Notebook, Film, UserFilled, Tools, Lock, Position, Operation, Message, Back, Bell, Check
+    Bowl,
+    ChatLineRound,
+    Location,
+    MoreFilled,
+    Promotion,
+    School,
+    ShoppingTrolley,
+    Sunny,
+    Search,
+    Notebook, Film, UserFilled, Tools, Lock, Position, Operation, Message, Back, Bell, Check, Star
 } from "@element-plus/icons-vue";
 import {ElMessage} from "element-plus";
 import LightCard from "@/components/LightCard.vue";
+import axios from "axios";
 
 const loading = ref(true)
 const searchInput = reactive({
@@ -52,6 +53,19 @@ function confirmNotification(id,url){
 function deleteAllNotifications(){
   get(`api/notification/delete-all`,()=>loadNotification())
 }
+
+const followList = ref([])
+const followInfoList = ref([])
+get(`/api/follow/getFollowList?uid=${store.user.id}`,(data)=>followList.value=data)
+get(`/api/follow/getFollowInfo?uid=${store.user.id}`,(data)=>followInfoList.value=data)
+
+function avatarUrl(avatar){
+    if(avatar){
+        return `${axios.defaults.baseURL}/images${avatar}`
+    }else
+        return "https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"
+}
+
 </script>
 
 <template>
@@ -80,7 +94,24 @@ function deleteAllNotifications(){
           </el-input>
         </div>
         <div class="user-info">
-          <el-popover placement="bottom" :width="350" trigger="hover">
+          <el-popover placement="bottom" :width="250" trigger="hover">
+            <template #reference>
+              <el-badge is-dot style="margin-right: 20px" :hidden="!notification.length">
+                <div class="notification">
+                  <el-icon><Star/></el-icon>
+                  <div style="font-size: 10px">关注</div>
+                </div>
+              </el-badge>
+            </template>
+            <el-empty :image-size="80" description="暂时没有关注的人哦~" v-if="!followInfoList.length"/>
+            <el-scrollbar :max-height="500" v-else>
+              <div v-for="item in followInfoList" style="display: flex">
+                  <span>{{item.username}}</span>
+                  <el-avatar style="margin-left: auto" :size="30" :src="avatarUrl(item.avatar)"></el-avatar>
+              </div>
+            </el-scrollbar>
+          </el-popover>
+            <el-popover placement="bottom" :width="350" trigger="hover">
             <template #reference>
               <el-badge is-dot style="margin-right: 20px" :hidden="!notification.length">
                 <div class="notification">

@@ -32,5 +32,14 @@ export const useStore = defineStore("general",{
                     return type
             }
         },
+    },
+    persist: {
+        enabled: true, // 让 Pinia 自动存储数据
+        strategies: [
+            {
+                key: "user-store", // 存储的 key 名称
+                storage: localStorage, // 持久化到 localStorage
+            }
+        ]
     }
 })
