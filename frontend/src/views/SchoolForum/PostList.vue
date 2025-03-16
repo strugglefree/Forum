@@ -55,14 +55,25 @@ watch(() => topics.type ,() => {
 },{immediate:true})
 function updateList(){
     if (topics.end) return
-    get(`/api/forum/list-topic?page=${topics.page}&type=${topics.type}`, data => {
-        if (data) {
-            data.forEach(d => topics.list.push(d))
-            topics.page++
-        }
-        if (!data || data.length <10)
-            topics.end = true
-    })
+    if (topics.type>=0 && topics.type<7){
+        get(`/api/forum/list-topic?page=${topics.page}&type=${topics.type}`, data => {
+            if (data) {
+                data.forEach(d => topics.list.push(d))
+                topics.page++
+            }
+            if (!data || data.length <10)
+                topics.end = true
+        })
+    } if (topics.type === 7){
+        get(`/api/forum/list-topic-private?page=${topics.page}&uid=${store.user.id}`, data => {
+            if (data) {
+                data.forEach(d => topics.list.push(d))
+                topics.page++
+            }
+            if (!data || data.length <10)
+                topics.end = true
+        })
+    }
 }
 
 function onTopicCreate(){

@@ -24,4 +24,5 @@ public class Topic implements BaseData {
     private Integer uid;
     private Integer type;
     private Date time;
+    private String see;
 }

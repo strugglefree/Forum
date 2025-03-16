@@ -72,6 +72,12 @@ public class ForumController {
         return RestBean.success(topicService.getListTopic(page+1,type));
     }
 
+    @GetMapping("/list-topic-private")
+    public RestBean<List<TopicPreviewVO>> listTopicPrivate(@RequestParam @Min(0) int uid,
+                                                    @RequestParam @Min(0) int page){
+        return RestBean.success(topicService.getPrivateListTopic(page+1, uid));
+    }
+
     @GetMapping("/get-ip")
     public RestBean<String> getIp(HttpServletRequest request) {
         return RestBean.success(ipUtils.getIpAddr(request));

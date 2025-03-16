@@ -17,4 +17,5 @@ public class TopicCreateVO {
     private JSONObject content;
     @Min(1)
     private Integer type;
+    private String see;
 }

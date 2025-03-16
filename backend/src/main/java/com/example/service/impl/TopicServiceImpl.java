@@ -2,6 +2,7 @@ package com.example.service.impl;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -19,6 +20,7 @@ import com.example.service.TopicService;
 import com.example.utils.CacheUtils;
 import com.example.utils.Const;
 import com.example.utils.FlowUtils;
+import com.example.utils.JWTUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
@@ -108,18 +110,83 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
      * @author Ll
      * @date: 2024/7/21 下午1:24
      */
+//    @Override
+//    public List<TopicPreviewVO> getListTopic(int page, int type) {
+//        String key = Const.FORUM_TOPIC_CACHE + page + ':' + type;
+//        List<TopicPreviewVO> list = cacheUtils.getListFromCache(key,TopicPreviewVO.class);
+//        if(list != null){ return list;}
+//        Page<Topic> p = Page.of(page,10);
+//        if(type == 0) baseMapper.selectPage(p,Wrappers.<Topic>query().orderByDesc("time"));
+//        else baseMapper.selectPage(p,Wrappers.<Topic>query().eq("type",type).orderByDesc("time"));
+//        List<Topic> topics = p.getRecords();
+//        if (topics.isEmpty()) { return null;}
+//        list = topics.stream().map(this::resolveToPreview).toList();
+//        cacheUtils.saveListToCache(key, list, 60);
+//        return list;
+//    }
+
     @Override
     public List<TopicPreviewVO> getListTopic(int page, int type) {
         String key = Const.FORUM_TOPIC_CACHE + page + ':' + type;
-        List<TopicPreviewVO> list = cacheUtils.getListFromCache(key,TopicPreviewVO.class);
-        if(list != null){ return list;}
-        Page<Topic> p = Page.of(page,10);
-        if(type == 0) baseMapper.selectPage(p,Wrappers.<Topic>query().orderByDesc("time"));
-        else baseMapper.selectPage(p,Wrappers.<Topic>query().eq("type",type).orderByDesc("time"));
+        List<TopicPreviewVO> list = cacheUtils.getListFromCache(key, TopicPreviewVO.class);
+        if (list != null) {
+            return list;
+        }
+
+        Page<Topic> p = Page.of(page, 10);
+
+        // 创建查询构造器
+        LambdaQueryWrapper<Topic> queryWrapper = Wrappers.<Topic>lambdaQuery()
+                .eq(Topic::getSee, "公开展示")  // 只查询公开展示的帖子
+                .orderByDesc(Topic::getTime);  // 按时间倒序排列
+
+        // 根据 type 进行条件判断
+        if (type != 0) {
+            queryWrapper.eq(Topic::getType, type); // 只筛选指定类型
+        }
+
+        // 执行分页查询
+        baseMapper.selectPage(p, queryWrapper);
+
         List<Topic> topics = p.getRecords();
-        if (topics.isEmpty()) { return null;}
+        if (topics.isEmpty()) {
+            return Collections.emptyList(); // 避免返回 null
+        }
+
         list = topics.stream().map(this::resolveToPreview).toList();
         cacheUtils.saveListToCache(key, list, 60);
+
+        return list;
+    }
+
+    @Override
+    public List<TopicPreviewVO> getPrivateListTopic(int page, int uid) {
+        String key = Const.FORUM_TOPIC_PRIVATE_CACHE + page + ':'+ uid + ':' + 7;
+
+        List<TopicPreviewVO> list = cacheUtils.getListFromCache(key, TopicPreviewVO.class);
+        if (list != null) {
+            return list;
+        }
+
+        Page<Topic> p = Page.of(page, 10);
+
+        // 创建查询构造器
+        LambdaQueryWrapper<Topic> queryWrapper = Wrappers.<Topic>lambdaQuery()
+                .eq(Topic::getSee, "私密隐藏")// 只查询公开展示的帖子
+                .eq(Topic::getUid, uid)
+                .orderByDesc(Topic::getTime);  // 按时间倒序排列
+
+        // 执行分页查询
+        baseMapper.selectPage(p, queryWrapper);
+
+        List<Topic> topics = p.getRecords();
+        if (topics.isEmpty()) {
+            return Collections.emptyList(); // 避免返回 null
+        }
+
+        list = topics.stream().map(this::resolveToPreview).toList();
+        cacheUtils.saveListToCache(key, list, 60);
+
         return list;
     }
 

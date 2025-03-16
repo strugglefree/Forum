@@ -7,7 +7,7 @@ import { ImageExtend, QuillWatch } from "quill-image-super-solution-module";
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import {ElMessage} from "element-plus";
 import axios from "axios";
-import {accessHeader, get, post} from "@/net";
+import {accessHeader, post} from "@/net";
 import ColorDot from "@/components/ColorDot.vue";
 import {useStore} from "@/store"
 const store = useStore();
@@ -34,7 +34,8 @@ const props = defineProps({
       post(`/api/forum/create-topic`,{
         type: editor.type.id,
         title: editor.title,
-        content: editor.text
+        content: editor.text,
+        see: editor.see,
       },()=>{
         ElMessage.success("发布成功！")
         success();
@@ -50,8 +51,20 @@ const editor = reactive({
   type: null,
   title: '',
   text: '',
+  see: '',
   loading: false,
 })
+
+const options = [
+    {
+        value: '公开展示',
+        label: '公开展示',
+    },
+    {
+        value: '私密隐藏',
+        label: '私密隐藏',
+    }
+]
 
 const refEditor = ref()
 function initEditor(){
@@ -133,6 +146,10 @@ function submitTopic(){
     ElMessage.warning("您还没有输入内容")
     return;
   }
+  if(!editor.see){
+      ElMessage.warning("您还没有设置可见范围")
+      return;
+  }
   props.submit(editor,()=>emit("created"))
 }
 
@@ -191,6 +208,14 @@ const deltaLength = computed(() => deltaToText(editor.text).length)
           当前字数{{deltaLength}}（最大支持20000个字）
         </div>
         <div>
+            <el-select v-model="editor.see" placeholder="Select" style="width: 100px;margin-right: 20px">
+                <el-option
+                    v-for="item in options"
+                    :key="item.value"
+                    :label="item.label"
+                    :value="item.value"
+                />
+            </el-select>
           <el-button :icon="Share" @click="submitTopic" type="primary">{{props.submitButton}}</el-button>
         </div>
       </div>

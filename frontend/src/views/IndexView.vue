@@ -94,7 +94,7 @@ function avatarUrl(avatar){
           </el-input>
         </div>
         <div class="user-info">
-          <el-popover placement="bottom" :width="250" trigger="hover">
+            <el-popover placement="bottom" :width="250" trigger="hover">
             <template #reference>
               <el-badge is-dot style="margin-right: 20px" :hidden="!notification.length">
                 <div class="notification">
@@ -105,7 +105,7 @@ function avatarUrl(avatar){
             </template>
             <el-empty :image-size="80" description="暂时没有关注的人哦~" v-if="!followInfoList.length"/>
             <el-scrollbar :max-height="500" v-else>
-              <div v-for="item in followInfoList" style="display: flex">
+              <div v-for="item in followInfoList" style="display: flex;justify-content: space-between;" >
                   <span>{{item.username}}</span>
                   <el-avatar style="margin-left: auto" :size="30" :src="avatarUrl(item.avatar)"></el-avatar>
               </div>

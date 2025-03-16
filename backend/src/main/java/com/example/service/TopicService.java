@@ -23,6 +23,7 @@ public interface TopicService extends IService<Topic> {
     List<TopicType> getListTopicTypes();
     String createTopic(TopicCreateVO vo , int uid);
     List<TopicPreviewVO> getListTopic(int page , int type);
+    List<TopicPreviewVO> getPrivateListTopic(int page, int uid);
     List<TopTopicVO> getListTopTopic();
     TopicDetailsVO getTopicDetails(int tid,int uid);
     void interact(Interact interact, boolean state);
