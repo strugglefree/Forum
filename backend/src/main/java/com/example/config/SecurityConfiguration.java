@@ -31,7 +31,7 @@ import java.io.PrintWriter;
  * @date 2024/7/11 下午1:46
  */
 @Configuration
-public class securityConfiguration {
+public class SecurityConfiguration {
 
     @Resource
     private JWTUtils jwtUtils;
@@ -47,7 +47,7 @@ public class securityConfiguration {
         return http
                 .authorizeHttpRequests(conf -> conf
                         .requestMatchers("/api/auth/**","/error","/images/**").permitAll()
-                        .anyRequest().hasAnyRole(Const.ROLE_DEFAULT)
+                        .anyRequest().hasAnyRole(Const.ROLE_DEFAULT, Const.ROLE_ADMIN)
                 )
                 .formLogin(conf ->  conf
                         .loginProcessingUrl("/api/auth/login")

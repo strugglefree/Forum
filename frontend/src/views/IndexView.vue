@@ -1,9 +1,9 @@
 <script setup>
 
-import {logout , get} from "@/net";
-import router from "@/router";
+import {get} from "@/net";
+
 import {useStore} from "@/store";
-import {reactive, ref} from "vue";
+import {inject, reactive, ref} from "vue";
 import {
     Bowl,
     ChatLineRound,
@@ -14,18 +14,42 @@ import {
     ShoppingTrolley,
     Sunny,
     Search,
-    Notebook, Film, UserFilled, Tools, Lock, Position, Operation, Message, Back, Bell, Check, Star
+    Notebook, Film, UserFilled, Tools, Lock, Position, Bell, Check, Star
 } from "@element-plus/icons-vue";
-import {ElMessage} from "element-plus";
 import LightCard from "@/components/LightCard.vue";
 import axios from "axios";
+import UserInfo from "@/components/UserInfo.vue";
 
-const loading = ref(true)
 const searchInput = reactive({
   type: '1',
   text: ''
 })
+
+const userMenu = [
+    {
+        title: '校园论坛', icon: Location, sub: [
+            {title: '帖子广场', icon: ChatLineRound, index: '/index'},
+            {title: '分享好书', icon: Notebook, index: '/index/niceBook'},
+            {title: '学校活动', icon: School},
+            {title: '表白墙', icon: Promotion},
+            {title: '广告位出租', icon: MoreFilled},
+        ]
+    },{
+        title: '探索发现', icon: Position, sub: [
+            {title: '自然风景', icon: Sunny},
+            {title: '美食打卡', icon: Bowl},
+            {title: '逛街必去', icon: ShoppingTrolley},
+            {title: '美食经典', icon: Film},
+        ]
+    },{
+        title: '设置', icon: Tools, sub: [
+            {title: '个人信息设置', icon: UserFilled, index: '/index/user-setting'},
+            {title: '账号安全设置', icon: Lock, index: '/index/privacy-setting'},
+        ]
+    },
+]
 const store = useStore()
+const loading = inject('userLoading')
 const notification = ref([])
 
 const loadNotification = () => {
@@ -33,16 +57,7 @@ const loadNotification = () => {
 }
 
 loadNotification();
-get('api/user/info',(data)=>{
-  store.user = data
-  loading.value = false
-})
-function userLogout(){
-  logout(()=>{
-    router.push('/')
-    ElMessage.success(`退出登录成功，欢迎您再次使用`)
-  })
-}
+
 function confirmNotification(id,url){
   get(`api/notification/delete?id=${id}`,()=>{
     loadNotification()
@@ -54,9 +69,7 @@ function deleteAllNotifications(){
   get(`api/notification/delete-all`,()=>loadNotification())
 }
 
-const followList = ref([])
 const followInfoList = ref([])
-get(`/api/follow/getFollowList?uid=${store.user.id}`,(data)=>followList.value=data)
 get(`/api/follow/getFollowInfo?uid=${store.user.id}`,(data)=>followInfoList.value=data)
 
 function avatarUrl(avatar){
@@ -93,73 +106,52 @@ function avatarUrl(avatar){
             </template>
           </el-input>
         </div>
-        <div class="user-info">
-            <el-popover placement="bottom" :width="250" trigger="hover">
-            <template #reference>
-              <el-badge is-dot style="margin-right: 20px" :hidden="!notification.length">
-                <div class="notification">
-                  <el-icon><Star/></el-icon>
-                  <div style="font-size: 10px">关注</div>
-                </div>
-              </el-badge>
-            </template>
-            <el-empty :image-size="80" description="暂时没有关注的人哦~" v-if="!followInfoList.length"/>
-            <el-scrollbar :max-height="500" v-else>
-              <div v-for="item in followInfoList" style="display: flex;justify-content: space-between;" >
-                  <span>{{item.username}}</span>
-                  <el-avatar style="margin-left: auto" :size="30" :src="avatarUrl(item.avatar)"></el-avatar>
-              </div>
-            </el-scrollbar>
-          </el-popover>
-            <el-popover placement="bottom" :width="350" trigger="hover">
-            <template #reference>
-              <el-badge is-dot style="margin-right: 20px" :hidden="!notification.length">
-                <div class="notification">
-                  <el-icon><Bell/></el-icon>
-                  <div style="font-size: 10px">消息</div>
-                </div>
-              </el-badge>
-            </template>
-            <el-empty :image-size="80" description="暂时没有新消息哦~" v-if="!notification.length"/>
-            <el-scrollbar :max-height="500" v-else>
-              <light-card v-for="item in notification" class="notification-item" @click="confirmNotification(item.id,item.url)">
-                <div>
-                  <el-tag size="small" :type="item.type">消息</el-tag>&nbsp;
-                  <span style="font-weight: bold">{{item.title}}</span>
-                </div>
-                <el-divider style="margin: 7px 0 3px 0"/>
-                <div style="font-size: 13px">
-                  {{item.content}}
-                </div>
-              </light-card>
-            </el-scrollbar>
-            <div style="margin-top: 10px">
-              <el-button size="small" type="info" :icon="Check" @click="deleteAllNotifications"
-                         style="width: 100%" plain>清除全部未读消息</el-button>
-            </div>
-          </el-popover>
-          <div class="profile">
-            <div>{{ store.user.username }}</div>
-            <div>{{ store.user.email }}</div>
-          </div>
-          <el-dropdown>
-            <el-avatar :src="store.avatarUrl"/>
-            <template #dropdown>
-              <el-dropdown-item>
-                <el-icon><Operation /></el-icon>
-                个人设置
-              </el-dropdown-item>
-              <el-dropdown-item>
-                <el-icon><Message /></el-icon>
-                消息列表
-              </el-dropdown-item>
-              <el-dropdown-item @click="userLogout" divided>
-                <el-icon><Back /></el-icon>
-                退出登录
-              </el-dropdown-item>
-            </template>
-          </el-dropdown>
-        </div>
+          <user-info>
+              <el-popover placement="bottom" :width="250" trigger="hover">
+                  <template #reference>
+                      <el-badge style="margin-right: 20px">
+                          <div class="notification">
+                              <el-icon><Star/></el-icon>
+                              <div style="font-size: 10px">关注</div>
+                          </div>
+                      </el-badge>
+                  </template>
+                  <el-empty :image-size="80" description="暂时没有关注的人哦~" v-if="!followInfoList.length"/>
+                  <el-scrollbar :max-height="500" v-else>
+                      <div v-for="item in followInfoList" style="display: flex;justify-content: space-between;" >
+                          <span>{{item.username}}</span>
+                          <el-avatar style="margin-left: auto" :size="30" :src="avatarUrl(item.avatar)"></el-avatar>
+                      </div>
+                  </el-scrollbar>
+              </el-popover>
+              <el-popover placement="bottom" :width="350" trigger="hover">
+                  <template #reference>
+                      <el-badge is-dot style="margin-right: 20px" :hidden="!notification.length">
+                          <div class="notification">
+                              <el-icon><Bell/></el-icon>
+                              <div style="font-size: 10px">消息</div>
+                          </div>
+                      </el-badge>
+                  </template>
+                  <el-empty :image-size="80" description="暂时没有新消息哦~" v-if="!notification.length"/>
+                  <el-scrollbar :max-height="500" v-else>
+                      <light-card v-for="item in notification" class="notification-item" @click="confirmNotification(item.id,item.url)">
+                          <div>
+                              <el-tag size="small" :type="item.type">消息</el-tag>&nbsp;
+                              <span style="font-weight: bold">{{item.title}}</span>
+                          </div>
+                          <el-divider style="margin: 7px 0 3px 0"/>
+                          <div style="font-size: 13px">
+                              {{item.content}}
+                          </div>
+                      </light-card>
+                  </el-scrollbar>
+                  <div style="margin-top: 10px">
+                      <el-button size="small" type="info" :icon="Check" @click="deleteAllNotifications"
+                                 style="width: 100%" plain>清除全部未读消息</el-button>
+                  </div>
+              </el-popover>
+          </user-info>
       </el-header>
       <el-container>
         <el-aside width="230px">
@@ -167,90 +159,22 @@ function avatarUrl(avatar){
             <el-menu
                 router
                 style="min-height: calc(100vh - 55px)"
-                :default-openeds="['1','3']"
+                :default-openeds="['1','2','3']"
                 :default-active="$route.path">
-              <el-sub-menu index="1">
+              <el-sub-menu :index="(index + 1).toString()"
+                           v-for="(menu, index) in userMenu">
                 <template #title>
-                  <el-icon><Location/></el-icon>
-                  <span><b>校园论坛</b></span>
+                  <el-icon>
+                      <component :is="menu.icon"/>
+                  </el-icon>
+                  <span><b>{{ menu.title }}</b></span>
                 </template>
-                <el-menu-item index="/index">
+                <el-menu-item :index="subMenu.index" v-for="subMenu in menu.sub">
                   <template #title>
-                    <el-icon><ChatLineRound /></el-icon>
-                    帖子广场
-                  </template>
-                </el-menu-item>
-                <el-menu-item>
-                  <template #title>
-                    <el-icon><Notebook /></el-icon>
-                    分享好书
-                  </template>
-                </el-menu-item>
-                <el-menu-item>
-                  <template #title>
-                    <el-icon><School /></el-icon>
-                    学校活动
-                  </template>
-                </el-menu-item>
-                <el-menu-item>
-                  <template #title>
-                    <el-icon><Promotion /></el-icon>
-                    表白墙
-                  </template>
-                </el-menu-item>
-                <el-menu-item>
-                  <template #title>
-                    <el-icon><MoreFilled /></el-icon>
-                    广告位出租
-                    <el-tag size="small" style="margin-left: 10px">合作机构</el-tag>
-                  </template>
-                </el-menu-item>
-              </el-sub-menu>
-              <el-sub-menu index="2">
-                <template #title>
-                  <el-icon><Position /></el-icon>
-                  探索发现
-                </template>
-                <el-menu-item>
-                  <template #title>
-                    <el-icon><Sunny /></el-icon>
-                    自然风景
-                  </template>
-                </el-menu-item>
-                <el-menu-item>
-                  <template #title>
-                    <el-icon><Bowl /></el-icon>
-                    美食打卡
-                  </template>
-                </el-menu-item>
-                <el-menu-item>
-                  <template #title>
-                    <el-icon><ShoppingTrolley /></el-icon>
-                    逛街必去
-                  </template>
-                </el-menu-item>
-                <el-menu-item>
-                  <template #title>
-                    <el-icon><Film /></el-icon>
-                    影视经典
-                  </template>
-                </el-menu-item>
-              </el-sub-menu>
-              <el-sub-menu index="3">
-                <template #title>
-                  <el-icon><Tools /></el-icon>
-                  设置
-                </template>
-                <el-menu-item index="/index/user-setting">
-                  <template #title>
-                    <el-icon><UserFilled /></el-icon>
-                    个人信息设置
-                  </template>
-                </el-menu-item>
-                <el-menu-item index="/index/privacy-setting">
-                  <template #title>
-                    <el-icon><Lock /></el-icon>
-                    账号安全设置
+                      <el-icon>
+                          <component :is="subMenu.icon"/>
+                      </el-icon>
+                      {{subMenu.title}}
                   </template>
                 </el-menu-item>
               </el-sub-menu>
