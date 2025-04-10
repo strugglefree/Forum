@@ -86,6 +86,10 @@ function deleteComment(id){
     loadComments(topic.page)
   })
 }
+
+function followAndUnfollow(){
+    ElMessage.success("关注或取关操作成功！")
+}
 </script>
 
 <template>
@@ -103,7 +107,16 @@ function deleteComment(id){
     </div>
     <div class="topic-main">
       <div class="topic-main-left">
-        <el-avatar :size="60" :src="avatarUrl(topic.data.user.avatar)"></el-avatar>
+          <div>
+              <el-avatar :size="60" :src="avatarUrl(topic.data.user.avatar)"></el-avatar>
+              <el-button @click="followAndUnfollow"
+                  style="position: relative;right: 42px"
+                  circle color="red" size="small">
+                  <el-icon><Plus/></el-icon>
+              </el-button>
+          </div>
+
+
         <div>
           <div style="font-size: 18px;font-weight: bold">
             {{topic.data.user.username}}
