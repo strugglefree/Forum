@@ -77,7 +77,7 @@ public class SecurityConfiguration {
         response.setCharacterEncoding("UTF-8");
         User user = (User) authentication.getPrincipal();
         Account account = service.findAccountByUsernameOrEmail(user.getUsername());
-        String token = jwtUtils.createJWT(user,account.getId(),account.getUsername());
+        String token = jwtUtils.createJWT(user,account.getId(),account.getUsername());   //创建唯一JWT令牌
         AuthorizeVO vo = account.asViewObject(AuthorizeVO.class , v -> {
             v.setToken(token);
             v.setExpires(jwtUtils.ExpireTime());

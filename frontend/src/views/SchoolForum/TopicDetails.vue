@@ -1,6 +1,5 @@
 <script setup>
 import {useRoute} from "vue-router";
-import {get, post} from "@/net";
 import axios from "axios";
 import {reactive, ref} from "vue";
 import {ArrowLeft, ChatSquare, Delete, EditPen, Female, Male, Plus, StarFilled, Sugar} from "@element-plus/icons-vue";
@@ -13,6 +12,7 @@ import {ElMessage} from "element-plus";
 import {useStore} from "@/store";
 import TopicEditor from "@/components/TopicEditor.vue";
 import TopicCommentEditor from "@/components/TopicCommentEditor.vue";
+import {apiForumComment, apiForumDelete, apiForumGetDetail, apiForumInteract, apiForumUpdate} from "@/net/api/forum";
 
 const route = useRoute()
 const tid = route.params.tid
@@ -30,7 +30,7 @@ const topic = reactive({
   comment: null,
   page: 1,
 })
-const init = () => get(`/api/forum/topic?tid=${tid}`,data=>{
+const init = () => apiForumGetDetail(tid,data=>{
   topic.data=data
   topic.like=data.interact.like
   topic.collect=data.interact.collect
@@ -53,15 +53,11 @@ function avatarUrl(avatar){
 }
 
 function interact(type , message){
-  get(`/api/forum/interact?tid=${tid}&type=${type}&state=${!topic[type]}`,()=>{
-    topic[type] = !topic[type]
-    if(topic[type]) ElMessage.success(`${message}成功`)
-    else ElMessage.success(`已取消${message}`)
-  })
+  apiForumInteract(tid, type, topic, message)
 }
 
 function updateTopic(editor){
-  post(`/api/forum/topic-update`,{
+  apiForumUpdate({
     id: tid,
     type: editor.type.id,
     title: editor.title,
@@ -76,9 +72,7 @@ function updateTopic(editor){
 function loadComments(page){
   topic.comment = null
   topic.page = page
-  get(`/api/forum/comments?tid=${tid}&page=${page-1}`,data=>{
-    topic.comment = data
-  })
+  apiForumComment(tid, page-1 , data => topic.comment = data)
 }
 
 function onCommentAdd(){
@@ -87,7 +81,7 @@ function onCommentAdd(){
 }
 
 function deleteComment(id){
-  get(`api/forum/delete-comment?cid=${id}`,()=>{
+  apiForumDelete(id,()=>{
     ElMessage.success("删除评论成功")
     loadComments(topic.page)
   })

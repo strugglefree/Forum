@@ -38,7 +38,7 @@ public class JWTUtils {
     @Resource
     FlowUtils utils;
 /**
- * @description:  是不是有效的jwt
+ * @description:  退出登录时验证JWT是否有效。退出成功后删除Token
  * @param: [token]
  * @return: boolean
  * @author Ll

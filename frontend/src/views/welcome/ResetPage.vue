@@ -2,10 +2,9 @@
 
 import {computed, reactive, ref} from 'vue'
 import {Check, CloseBold, EditPen, Lock, Message} from "@element-plus/icons-vue";
-import {get, post} from "@/net";
 import {ElMessage} from "element-plus";
 import router from "@/router";
-
+import {apiAuthAskCode, apiAuthResetConfirm, apiAuthResetPassword} from "@/net/api/user";
 const validatePassword = (rule, value, callback) => {
   if (value === '') {
     callback(new Error('请再次输入密码'))
@@ -15,6 +14,7 @@ const validatePassword = (rule, value, callback) => {
     callback()
   }
 }
+
 const rules = {
   email: [
     { required: true, message: '请输入邮件地址', trigger: 'blur' },
@@ -31,6 +31,7 @@ const rules = {
     { validator: validatePassword, trigger: ['blur', 'change'] },
   ]
 }
+
 const active = ref(0)
 const VerifyForm = reactive({
   email: "",
@@ -44,14 +45,7 @@ const isEmailValid = computed(()=>/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2
 
 function askCode() {
   if (isEmailValid) {
-    coldTime.value = 60
-    get(`api/auth/ask-code?email=${VerifyForm.email}&type=reset`, () => {
-      ElMessage.success(`验证码发送到${VerifyForm.email}请注意查收`)
-      setInterval(() => coldTime.value--, 1000);
-    }, (message) => {
-      ElMessage.warning(message)
-      coldTime.value = 0
-    })
+    apiAuthAskCode(VerifyForm.email, "reset",coldTime)
   } else {
     ElMessage.warning('请输入正确的邮箱地址')
   }
@@ -59,26 +53,19 @@ function askCode() {
 
 function confirmReset(){
   formRef.value.validate((valid) => {
-    if(valid){
-      post("/api/auth/reset-confirm",
-          {
-            email: VerifyForm.email,
-            code: VerifyForm.code
-          },
-          () => active.value++)
+    if(valid) {
+      apiAuthResetConfirm({
+        email: VerifyForm.email,
+        code: VerifyForm.code
+      }, active)
     }
   })
 }
 
 function doReset(){
   formRef.value.validate((valid) => {
-    if(valid){
-      post("/api/auth/reset-password",
-          {...VerifyForm},
-          () => {
-            ElMessage.success("重置密码成功！请登录吧！")
-            router.push("/")
-          })
+    if(valid) {
+      apiAuthResetPassword({...VerifyForm})
     }
   })
 }

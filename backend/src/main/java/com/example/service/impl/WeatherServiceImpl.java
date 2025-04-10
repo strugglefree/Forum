@@ -34,6 +34,8 @@ public class WeatherServiceImpl implements WeatherService {
 
     @Value("${spring.weather.key}")
     private String key;
+    @Value("${spring.weather.host}")
+    private String host;
 
     /**
      * @description: 通过经纬度获取天气情况
@@ -57,11 +59,10 @@ public class WeatherServiceImpl implements WeatherService {
     private WeatherVO fetchFromCache(Double lon, Double lat) {
         JSONObject data = this.decompressStringToJson(
                 rest.getForObject(
-                        "https://geoapi.qweather.com/v2/city/lookup?location=" + lon + ',' + lat + "&key=" + key, byte[].class
+                        "https://"+host+"/geo/v2/city/lookup?location=" + lon + ',' + lat + "&key=" + key, byte[].class
                 )
         );
         if(data == null) return null;
-        log.info(data.toString());
         JSONObject location = data.getJSONArray("location").getJSONObject(0);
         String id = location.getString("id");
         String key = Const.FORUM_WEATHER_CACHE + id;
@@ -89,14 +90,14 @@ public class WeatherServiceImpl implements WeatherService {
         vo.setLocation(location);
         JSONObject now = this.decompressStringToJson(
                 rest.getForObject(
-                        "https://devapi.qweather.com/v7/weather/now?location=" + id + "&key=" + key, byte[].class
+                        "https://"+host+"/v7/weather/now?location=" + id + "&key=" + key, byte[].class
                 )
         );
         if(now == null) return null;
         vo.setNow(now.getJSONObject("now"));
         JSONObject hour = this.decompressStringToJson(
                 rest.getForObject(
-                        "https://devapi.qweather.com/v7/weather/24h?location=" + id + "&key=" + key, byte[].class
+                        "https://"+host+"/v7/weather/24h?location=" + id + "&key=" + key, byte[].class
                 )
         );
         if(hour == null) return null;

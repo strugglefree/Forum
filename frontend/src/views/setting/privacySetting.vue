@@ -2,12 +2,13 @@
 
 import Card from "@/components/Card.vue";
 import {Hide, Setting, Lock, Unlock, Check, RefreshRight} from "@element-plus/icons-vue";
-import {reactive, ref} from "vue";
-import {post, logout, get} from "@/net";
+import {onMounted, reactive, ref} from "vue";
+import {logout} from "@/net";
 import {ElMessage} from "element-plus";
 import router from "@/router";
+import {apiUserChangePassword, apiUserPrivacy, apiUserPrivacySave} from "@/net/api/user";
 
-const validatePassword = (rule, value, callback) => {
+const validatePassword = (_, value, callback) => {
   if (value === '') {
     callback(new Error('请再次输入密码'))
   } else if (value !== form.new_password) {
@@ -39,11 +40,11 @@ const onValidate = (prop , isValid) => valid.value = isValid
 function resetPassword(){
   formRef.value.validate(valid =>{
     if(valid){
-      post(`/api/user/change-password`, form ,()=>{
+      apiUserChangePassword(form,()=>{
         ElMessage.success("成功更改密码，请重新登录")
         formRef.value.resetFields()
         logout(()=>{router.push('/')})
-      },message => ElMessage.warning(message))
+      })
     }
   })
 }
@@ -52,28 +53,24 @@ const saving = ref(true)
 const privacy = reactive({
   phone: false,
   email: false,
-  wechat: false,
+  wx: false,
   qq: false,
   gender: false
 })
-get('/api/user/privacy',(data) => {
-  privacy.phone = data.phone
-  privacy.email = data.email
-  privacy.wechat = data.wx
-  privacy.qq = data.qq
-  privacy.gender = data.gender
-  saving.value = false
-})
+
 function savePrivacy(type , status){
-  saving.value = true
-  post("/api/user/save-privacy",{
+  apiUserPrivacySave({
     type: type,
     statue: status
-  },() => {
-    ElMessage.success(`隐私信息修改成功`)
+  },saving)
+}
+
+onMounted(() => {
+  apiUserPrivacy((data) => {
+    Object.assign(privacy, data)
     saving.value = false
   })
-}
+})
 </script>
 
 <template>
@@ -83,7 +80,7 @@ function savePrivacy(type , status){
         <div class="checkbox-list">
           <el-checkbox @change="savePrivacy('phone',privacy.phone)" v-model="privacy.phone">公开展示我的手机号</el-checkbox>
           <el-checkbox @change="savePrivacy('email',privacy.email)" v-model="privacy.email">公开展示我的电子邮箱</el-checkbox>
-          <el-checkbox @change="savePrivacy('wx',privacy.wechat)" v-model="privacy.wechat">公开展示我的微信</el-checkbox>
+          <el-checkbox @change="savePrivacy('wx',privacy.wx)" v-model="privacy.wx">公开展示我的微信</el-checkbox>
           <el-checkbox @change="savePrivacy('qq',privacy.qq)" v-model="privacy.qq">公开展示我的QQ</el-checkbox>
           <el-checkbox @change="savePrivacy('gender',privacy.gender)" v-model="privacy.gender">公开展示我的性别</el-checkbox>
         </div>

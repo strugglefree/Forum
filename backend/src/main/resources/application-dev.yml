@@ -51,3 +51,4 @@ spring:
       password: 'minio_mDQrR4'
   weather:
     key: "ff2c20090d1d43d89d03aa21d02f224c"
+    host: "mx2yvv8g69.re.qweatherapi.com"

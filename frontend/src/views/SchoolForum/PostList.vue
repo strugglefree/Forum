@@ -15,8 +15,7 @@ import {
   Sugar, StarFilled, Star, ArrowRightBold
 } from "@element-plus/icons-vue";
 import Weather from "@/components/Weather.vue";
-import {computed, reactive, ref, watch} from "vue";
-import {get, post} from "@/net";
+import {computed, onMounted, reactive, ref, watch} from "vue";
 import {ElMessage} from "element-plus";
 import TopicEditor from "@/components/TopicEditor.vue";
 import {useStore} from "@/store";
@@ -25,6 +24,8 @@ import ColorDot from "@/components/ColorDot.vue";
 import router from "@/router";
 import TopicTag from "@/components/TopicTag.vue";
 import CollectedTopic from "@/components/CollectedTopic.vue";
+import {apiForumIP, apiForumTop, apiForumTopicList, apiForumWeather} from "@/net/api/forum";
+import {apiUserCancelFollow, apiUserFollowList, apiUserGetFollow} from "@/net/api/user";
 
 const store = useStore()
 const topics = reactive({
@@ -48,32 +49,21 @@ const weather = reactive({
 
 const editor = ref(false)
 
-get(`/api/forum/top-topic`,data=> topics.tops=data)
-
 watch(() => topics.type ,() => {
   resetList()
 },{immediate:true})
+
+
 function updateList(){
-    if (topics.end) return
-    if (topics.type>=0 && topics.type<7){
-        get(`/api/forum/list-topic?page=${topics.page}&type=${topics.type}`, data => {
-            if (data) {
-                data.forEach(d => topics.list.push(d))
-                topics.page++
-            }
-            if (!data || data.length <10)
-                topics.end = true
-        })
-    } if (topics.type === 7){
-        get(`/api/forum/list-topic-private?page=${topics.page}&uid=${store.user.id}`, data => {
-            if (data) {
-                data.forEach(d => topics.list.push(d))
-                topics.page++
-            }
-            if (!data || data.length <10)
-                topics.end = true
-        })
+  if(topics.end) return
+  apiForumTopicList(topics.page, topics.type, data => {
+    if(data) {
+      data.forEach(d => topics.list.push(d))
+      topics.page++
     }
+    if(!data || data.length < 10)
+      topics.end = true
+  })
 }
 
 function onTopicCreate(){
@@ -98,14 +88,14 @@ function avatarUrl(avatar){
 navigator.geolocation.getCurrentPosition(position => {
       const lon = position.coords.longitude
       const lat = position.coords.latitude
-      get(`/api/forum/weather?longitude=${lon}&latitude=${lat}`,(data)=>{
+      apiForumWeather(lon, lat, (data)=>{
         Object.assign(weather,data)
         weather.success = true
       },message => ElMessage.error(message))
     }, error => {
       console.warn(error)
       ElMessage.warning("位置信息获取超时，请检查网络设置")
-      get(`/api/forum/weather?longitude=116.3912757&latitude=39.906217`,(data)=>{
+      apiForumWeather("116.3912757", "39.906217",(data)=>{
         Object.assign(weather,data)
         weather.success = true
       },message => ElMessage.error(message))
@@ -116,34 +106,24 @@ navigator.geolocation.getCurrentPosition(position => {
     }
 )
 const ip = ref("")
-get(`/api/forum/get-ip`,(data)=>ip.value=data)
 
 const collects = ref(false)
 
 function follow(uid, followUid){
-    post(`/api/follow`,{
-        uid: uid,
-        followUid: followUid
-    },() => {
-        ElMessage.success("关注用户成功！")
-        window.location.reload()
-    },message => ElMessage.warning("关注用户失败！" + message))
+    apiUserGetFollow({uid,followUid})
 }
 
 function cancelFollow(uid, followUid){
-    post(`/api/follow/cancelFollow`,{
-        uid: uid,
-        followUid: followUid
-    },() => {
-        ElMessage.success("取关用户成功！")
-        window.location.reload()
-    },message => ElMessage.warning("取关用户失败！" + message))
+    apiUserCancelFollow({uid,followUid})
 }
 
 const followList = ref([])
-get(`/api/follow/getFollowList?uid=${store.user.id}`,(data)=>followList.value=data)
 
-
+onMounted(() => {
+  apiForumTop(data=> topics.tops=data)
+  apiForumIP((data)=>ip.value=data)
+  apiUserFollowList(store.user.id,(data)=>followList.value=data)
+})
 </script>
 
 <template>
@@ -194,8 +174,23 @@ get(`/api/follow/getFollowList?uid=${store.user.id}`,(data)=>followList.value=da
                   </div>
                 </div>
                 <div v-if="item.uid!==store.user.id" style="margin-left: auto">
-                  <el-button v-if="followList.includes(item.uid)" @click="cancelFollow(store.user.id,item.uid)"   type="warning" plain round>已关注</el-button>
-                  <el-button v-else @click="follow(store.user.id,item.uid)" type="warning" plain round>关注</el-button>
+                  <el-button
+                      v-if="followList.includes(item.uid)"
+                      @click.stop="cancelFollow(store.user.id, item.uid)"
+                      type="warning"
+                      plain
+                      round>
+                    已关注
+                  </el-button>
+                  <el-button
+                      v-else
+                      @click.stop="follow(store.user.id, item.uid)"
+                      type="warning"
+                      plain
+                      round>
+                    关注
+                  </el-button>
+
                 </div>
               </div>
               <div>

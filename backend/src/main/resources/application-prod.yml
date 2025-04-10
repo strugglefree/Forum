@@ -1,10 +1,14 @@
 #生产环境配置
 server:
-  port: 80
+  port: 8081
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
   mail:
     host: smtp.163.com
     username: Javastudy1@163.com
@@ -25,30 +29,31 @@ spring:
             port: 465
             class: javax.net.ssl.SSLSocketFactory
   rabbitmq:
-    addresses: 47.97.2.37
+    addresses: 127.0.0.1
     username: rabbitmq
     password: rabbitmq
     virtual-host: /
   data:
     redis:
       database: 0
-      host: 47.97.2.37
+      host: localhost
       username: default
-      password: redis_HrDCXN
+      password: redis_ABSnB5
       port: 6379
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
-    password: mysql_QR62KR
-    url: jdbc:mysql://47.97.2.37:3306/Forum
+    username: forum
+    password: A2fZPsSdAjjhP4cB
+    url: jdbc:mysql://localhost:3306/forum
   web:
     cors:
       origin: '*'
       credentials: false
       methods: '*'
     minio:
-      endpoint: "http://localhost:9000"
-      username: '用户名'
-      password: '密码'
+      endpoint: 'http://localhost:9000'
+      username: 'minio_eR8t6x'
+      password: 'minio_8zJaBc'
   weather:
-    key: "申请的key"
+    key: "ff2c20090d1d43d89d03aa21d02f224c"
+    host: "mx2yvv8g69.re.qweatherapi.com"

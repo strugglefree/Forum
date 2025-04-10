@@ -1,10 +1,10 @@
 <script setup>
 import {ref} from "vue";
-import {get} from "@/net";
 import LightCard from "@/components/LightCard.vue";
 import TopicTag from "@/components/TopicTag.vue";
 import router from "@/router";
 import {ElMessage} from "element-plus";
+import {apiForumCollect, apiForumCollectCancel} from "@/net/api/forum";
 
 defineProps({
   show: Boolean
@@ -14,13 +14,13 @@ const emit = defineEmits(['close'])
 const list = ref([])
 
 function init(){
-  get(`api/forum/collect`,data => {
+  apiForumCollect(data => {
     list.value = data
   })
 }
 
 function deleteCollect(index,tid){
-  get(`/api/forum/interact?tid=${tid}&type=collect&state=false`,()=>{
+  apiForumCollectCancel(tid, ()=>{
     ElMessage.success("已取消收藏！")
     list.value.splice(index,1)
   })

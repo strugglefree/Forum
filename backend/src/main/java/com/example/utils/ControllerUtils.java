@@ -19,7 +19,7 @@ public class ControllerUtils {
      * @author Ll
      * @date: 2024/7/14 上午9:28
      */
-    public   <T> RestBean<T> messageHandle(Supplier<String> action){
+    public <T> RestBean<T> messageHandle(Supplier<String> action){
         String s = action.get();
         return s == null ? RestBean.success() : RestBean.failure(400,s);
     }

@@ -2,8 +2,8 @@
 import {computed, reactive, ref} from "vue";
 import router from "@/router";
 import {Check, CloseBold, EditPen, Lock, Message, UserFilled} from "@element-plus/icons-vue";
-import {get, post} from "@/net"
 import {ElMessage} from "element-plus";
+import {apiAuthAskCode, apiAuthRegister} from "@/net/api/user";
 
 const coldTime = ref(0);
 
@@ -60,14 +60,7 @@ const rules = {
 
 function askCode(){
   if(isEmailValid){
-    coldTime.value = 60
-    get(`api/auth/ask-code?email=${form.email}&type=register`,()=>{
-      ElMessage.success(`验证码发送到${form.email}请注意查收`)
-      setInterval(()=>coldTime.value--,1000);
-    },(message)=>{
-      ElMessage.warning(message)
-      coldTime.value=0
-    })
+    apiAuthAskCode(form.email, "register",coldTime)
   }else{
     ElMessage.warning('请输入正确的邮箱地址')
   }
@@ -78,14 +71,11 @@ const isEmailValid = computed(()=>/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2
 function register(){
   formRef.value.validate((valid) => {
     if(valid){
-      post("api/auth/register",{
+      apiAuthRegister({
         username: form.username,
         password: form.password,
         email: form.email,
         code: form.code
-      },()=>{
-        ElMessage.success(`注册成功，欢迎加入这个论坛`)
-        router.push('/')
       })
     }else {
       ElMessage.warning("请完整填写表单内容")

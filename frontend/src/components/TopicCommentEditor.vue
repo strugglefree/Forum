@@ -2,8 +2,8 @@
 import {Delta, QuillEditor} from "@vueup/vue-quill";
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import {ref} from "vue";
-import {post} from "@/net";
 import {ElMessage} from "element-plus";
+import {apiForumAddComment} from "@/net/api/forum";
 
 const props = defineProps({
   show: Boolean,
@@ -20,7 +20,7 @@ function comment(){
     ElMessage.warning("评论字数过多！")
     return
   }
-  post(`/api/forum/add-comment`,{
+  apiForumAddComment({
     tid: props.tid,
     quote: props.quote ? props.quote.id : -1,
     content: JSON.stringify(content.value)

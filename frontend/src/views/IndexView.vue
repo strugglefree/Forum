@@ -1,7 +1,5 @@
 <script setup>
 
-import {get} from "@/net";
-
 import {useStore} from "@/store";
 import {inject, reactive, ref} from "vue";
 import {
@@ -19,6 +17,12 @@ import {
 import LightCard from "@/components/LightCard.vue";
 import axios from "axios";
 import UserInfo from "@/components/UserInfo.vue";
+import {
+  apiUserFollowInfo,
+  apiUserNotificationDelete,
+  apiUserNotificationDeleteAll,
+  apiUserNotificationList
+} from "@/net/api/user";
 
 const searchInput = reactive({
   type: '1',
@@ -53,24 +57,24 @@ const loading = inject('userLoading')
 const notification = ref([])
 
 const loadNotification = () => {
-  get(`api/notification/list`, data=>notification.value = data)
+  apiUserNotificationList(data=>notification.value = data)
 }
 
 loadNotification();
 
 function confirmNotification(id,url){
-  get(`api/notification/delete?id=${id}`,()=>{
+  apiUserNotificationDelete(()=>{
     loadNotification()
     window.open(url)
   })
 }
 
 function deleteAllNotifications(){
-  get(`api/notification/delete-all`,()=>loadNotification())
+  apiUserNotificationDeleteAll(()=>loadNotification())
 }
 
 const followInfoList = ref([])
-get(`/api/follow/getFollowInfo?uid=${store.user.id}`,(data)=>followInfoList.value=data)
+apiUserFollowInfo(store.user.id,(data)=>followInfoList.value=data)
 
 function avatarUrl(avatar){
     if(avatar){

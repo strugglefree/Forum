@@ -7,9 +7,10 @@ import { ImageExtend, QuillWatch } from "quill-image-super-solution-module";
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import {ElMessage} from "element-plus";
 import axios from "axios";
-import {accessHeader, post} from "@/net";
+import {accessHeader} from "@/net";
 import ColorDot from "@/components/ColorDot.vue";
 import {useStore} from "@/store"
+import {apiForumAddTopic} from "@/net/api/forum";
 const store = useStore();
 const props = defineProps({
   show: Boolean,
@@ -31,7 +32,7 @@ const props = defineProps({
   },
   submit:{
     default: (editor,success) => {
-      post(`/api/forum/create-topic`,{
+      apiForumAddTopic({
         type: editor.type.id,
         title: editor.title,
         content: editor.text,

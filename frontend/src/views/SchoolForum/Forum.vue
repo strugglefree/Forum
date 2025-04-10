@@ -1,15 +1,20 @@
 <script setup>
 import {useStore} from "@/store";
-import {get} from "@/net";
 import {ElMessage} from "element-plus";
+import {onMounted} from "vue";
+import {apiForumGet} from "@/net/api/forum";
 
 const store = useStore()
-get(`api/forum/types`,(data)=>{
+apiForumGet((data)=>{
   const array = [];
   array.push({name:"全部",id:0,color:'linear-gradient(45deg,white,red,orange,gold,green,blue)'})
   data.forEach((item)=>{array.push(item)})
   store.forum.types = array
 },message => ElMessage.error(message))
+
+onMounted(() => {
+
+})
 </script>
 
 <template>
