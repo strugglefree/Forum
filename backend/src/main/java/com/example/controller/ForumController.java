@@ -1,12 +1,14 @@
 package com.example.controller;
 
 import com.example.entity.RestBean;
+import com.example.entity.dto.Account;
 import com.example.entity.dto.Interact;
 import com.example.entity.dto.TopicType;
 import com.example.entity.vo.request.AddCommentVO;
 import com.example.entity.vo.request.TopicCreateVO;
 import com.example.entity.vo.request.TopicUpdateVO;
 import com.example.entity.vo.response.*;
+import com.example.service.AccountService;
 import com.example.service.TopicService;
 import com.example.service.WeatherService;
 import com.example.utils.Const;
@@ -40,6 +42,8 @@ public class ForumController {
     IPUtils ipUtils;
     @Resource
     ControllerUtils controllerUtils;
+    @Resource
+    AccountService accountService;
 
     @GetMapping("/weather")
     public RestBean<WeatherVO> getWeather(double longitude, double latitude) {
@@ -63,6 +67,10 @@ public class ForumController {
     @PostMapping("/create-topic")
     public RestBean<Void> createTopic(@RequestBody @Valid TopicCreateVO vo,
                                       @RequestAttribute(Const.ATTR_USER_ID) int uid){
+        Account account = accountService.findAccountById(uid);
+        if (account.isMute()){
+            return RestBean.accessDenied("您已被禁言，无法创建新的主题");
+        }
         return controllerUtils.messageHandle(()->topicService.createTopic(vo, uid));
     }
 
@@ -117,6 +125,10 @@ public class ForumController {
     @PostMapping("/add-comment")
     public RestBean<Void> addComment(@RequestBody @Valid AddCommentVO vo,
                                      @RequestAttribute(Const.ATTR_USER_ID) int uid){
+        Account account = accountService.findAccountById(uid);
+        if (account.isMute()){
+            return RestBean.accessDenied("您已被禁言，无法创建新的回复");
+        }
         return controllerUtils.messageHandle(() -> topicService.createComment(vo, uid));
     }
 

@@ -14,6 +14,7 @@ public class Const {
 
     public static final String FLOW_LIMIT_COUNTER = "flow:counter:";
     public static final String FLOW_LIMIT_BLOCK = "flow:block:";
+    public static final String BANNED_BLOCK = "Banned:block:";
 
     public static final int ORDER_CORE = -102; //跨域请求的顺序
     public static final int ORDER_LIMIT = -101;

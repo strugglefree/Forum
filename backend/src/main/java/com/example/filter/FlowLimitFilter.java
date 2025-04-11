@@ -42,7 +42,7 @@ public class FlowLimitFilter extends HttpFilter {
     @Override
     protected void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
         String address = request.getRemoteAddr();
-        if (!tryCount(address))
+        if (!"OPTIONS".equals(request.getMethod()) && !tryCount(address))
             this.writeBlockMessage(response);
         else
             chain.doFilter(request, response);
@@ -56,10 +56,10 @@ public class FlowLimitFilter extends HttpFilter {
      * @date: 2024/7/14 上午11:40
      */
     private void writeBlockMessage(HttpServletResponse response) throws IOException {
-        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setStatus(429);
         response.setContentType("application/json;charset=utf-8");
         PrintWriter writer = response.getWriter();
-        writer.write(RestBean.accessDenied("操作频繁，请稍后再试").asJsonString());
+        writer.write(RestBean.failure(429, "请求频率过快，请稍后再试").asJsonString());
     }
     /**
      * @description: 计数器，尝试计算在一定时间内的访问数量

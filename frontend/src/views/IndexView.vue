@@ -63,7 +63,7 @@ const loadNotification = () => {
 loadNotification();
 
 function confirmNotification(id,url){
-  apiUserNotificationDelete(()=>{
+  apiUserNotificationDelete(id,()=>{
     loadNotification()
     window.open(url)
   })

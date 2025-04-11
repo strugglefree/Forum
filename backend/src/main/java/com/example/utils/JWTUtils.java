@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 public class JWTUtils {
     @Value("qwertyuiop")
     private String key;
-    @Value("7")
+    @Value("72")
     private int expire;
     @Resource
     StringRedisTemplate template;
@@ -38,7 +38,7 @@ public class JWTUtils {
     @Resource
     FlowUtils utils;
 /**
- * @description:  退出登录时验证JWT是否有效。退出成功后删除Token
+ * @description:  让指定Jwt令牌失效
  * @param: [token]
  * @return: boolean
  * @author Ll
@@ -46,14 +46,12 @@ public class JWTUtils {
  */
     public boolean invalidateJwt(String headerToken) {
         String token = this.convertToken(headerToken);
-        if(token == null) return false;
         Algorithm algorithm = Algorithm.HMAC256(key);
-        JWTVerifier verifier = JWT.require(algorithm).build();
+        JWTVerifier jwtVerifier = JWT.require(algorithm).build();
         try {
-            DecodedJWT jwt = verifier.verify(token);
-            String id = jwt.getId();
-            return deleteToken(id,jwt.getExpiresAt());
-        }catch (JWTVerificationException e){
+            DecodedJWT verify = jwtVerifier.verify(token);
+            return deleteToken(verify.getId(), verify.getExpiresAt());
+        } catch (JWTVerificationException e) {
             return false;
         }
     }
@@ -64,11 +62,12 @@ public class JWTUtils {
  * @author Ll
  * @date: 2024/7/11 下午7:25
  */
-    private boolean deleteToken(String uuid , Date date) {
-        if(this.isInvalidToken(uuid)) return false;
+    private boolean deleteToken(String uuid , Date time) {
+        if(this.isInvalidToken(uuid))
+            return false;
         Date now = new Date();
-        long expire = Math.max(date.getTime() - now.getTime(),0);
-        template.opsForValue().set(Const.JWT_BAN_LIST + uuid,"",expire, TimeUnit.MILLISECONDS);
+        long expire = Math.max(time.getTime() - now.getTime(), 0);
+        template.opsForValue().set(Const.JWT_BAN_LIST + uuid, "", expire, TimeUnit.MILLISECONDS);
         return true;
     }
 /**
@@ -90,20 +89,17 @@ public class JWTUtils {
      * @date: 2024/7/11 下午4:24
      */
     public DecodedJWT resolveJwt(String headerToken) {
-        String token = convertToken(headerToken);
+        String token = this.convertToken(headerToken);
         if(token == null) return null;
-        else {
-            Algorithm algorithm = Algorithm.HMAC256(key);
-            JWTVerifier verifier = JWT.require(algorithm).build();
-            try {
-                DecodedJWT jwt = verifier.verify(token);
-                if(this.isInvalidToken(jwt.getId())) return null;
-                Date expiresAt = jwt.getExpiresAt();
-                return new Date().after(expiresAt) ? null : jwt;
-            }catch (JWTVerificationException e) {
-                return null;
-            }
-
+        Algorithm algorithm = Algorithm.HMAC256(key);
+        JWTVerifier jwtVerifier = JWT.require(algorithm).build();
+        try {
+            DecodedJWT verify = jwtVerifier.verify(token);
+            if(this.isInvalidToken(verify.getId())) return null;
+            Map<String, Claim> claims = verify.getClaims();
+            return new Date().after(claims.get("exp").asDate()) ? null : verify;
+        } catch (JWTVerificationException e) {
+            return null;
         }
     }
     /**
@@ -113,15 +109,23 @@ public class JWTUtils {
      * @author Ll
      * @date: 2024/7/11 下午4:24
      */
-    public String createJWT(UserDetails userDetails , int id , String name){
-        Algorithm algorithm = Algorithm.HMAC256(key);
-        return JWT.create()
-                .withJWTId(UUID.randomUUID().toString())
-                .withClaim("id",id)
-                .withClaim("username",name)
-                .withClaim("authorities",userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList())
-                .withExpiresAt(ExpireTime())
-                .sign(algorithm);
+    public String createJWT(UserDetails user, String username, int userId){
+        if(this.frequencyCheck(userId)) {
+            Algorithm algorithm = Algorithm.HMAC256(key);
+            Date expire = this.ExpireTime();
+            return JWT.create()
+                    .withJWTId(UUID.randomUUID().toString())
+                    .withClaim("id", userId)
+                    .withClaim("name", username)
+                    .withClaim("authorities", user.getAuthorities()
+                            .stream()
+                            .map(GrantedAuthority::getAuthority).toList())
+                    .withExpiresAt(expire)
+                    .withIssuedAt(new Date())
+                    .sign(algorithm);
+        } else {
+            return null;
+        }
     }
     /**
      * @description: 设置令牌过期时间
@@ -132,7 +136,7 @@ public class JWTUtils {
      */
     public Date ExpireTime(){
         Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.HOUR, expire * 24);
+        calendar.add(Calendar.HOUR, expire);
         return calendar.getTime();
     }
     /**
@@ -168,9 +172,9 @@ public class JWTUtils {
  * @date: 2024/7/11 下午5:18
  */
     public UserDetails toUser(DecodedJWT jwt){
-        Map<String,Claim> claims = jwt.getClaims();
+        Map<String, Claim> claims = jwt.getClaims();
         return User
-                .withUsername(claims.get("username").asString())
+                .withUsername(claims.get("name").asString())
                 .password("******")
                 .authorities(claims.get("authorities").asArray(String.class))
                 .build();

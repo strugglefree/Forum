@@ -127,7 +127,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
         if(this.existEmail(email)) return "该邮箱已被注册，请更换一个邮箱";
         if(this.existUsername(username)) return "该用户名已被使用，请重新输入";
         String password = passwordEncoder.encode(vo.getPassword());
-        Account account = new Account(null, username, password, email, Const.ROLE_DEFAULT, new Date(),null);
+        Account account = new Account(null, username, password, email, Const.ROLE_DEFAULT, new Date(),null,false,false);
         if(this.save(account)) {
             this.deleteEmailCode(email);//删除Redis存储的验证码
             accountPrivacyMapper.insert(new AccountPrivacy(account.getId()));

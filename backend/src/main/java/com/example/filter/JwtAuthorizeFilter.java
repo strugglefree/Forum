@@ -8,6 +8,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -28,6 +29,8 @@ public class JwtAuthorizeFilter extends OncePerRequestFilter {
 
     @Resource
     JWTUtils utils;
+    @Resource
+    StringRedisTemplate template;
 /**
  * @description:  jwt验证
  * @param: [request, response, filterChain]
@@ -36,18 +39,22 @@ public class JwtAuthorizeFilter extends OncePerRequestFilter {
  * @date: 2024/7/11 下午5:13
  */
     @Override
-    protected void doFilterInternal( HttpServletRequest request,
-                                     HttpServletResponse response,
-                                     FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
         String authorization = request.getHeader("Authorization");
         DecodedJWT jwt = utils.resolveJwt(authorization);
-        if (jwt != null) {
+        if(jwt != null) {
             UserDetails user = utils.toUser(jwt);
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            request.setAttribute(Const.ATTR_USER_ID, utils.toID(jwt));
+            if(!template.hasKey(Const.BANNED_BLOCK + utils.toID(jwt))) {
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                request.setAttribute(Const.ATTR_USER_ID, utils.toID(jwt));
+            } else {
+                utils.invalidateJwt(authorization);
+            }
         }
         filterChain.doFilter(request, response);
     }

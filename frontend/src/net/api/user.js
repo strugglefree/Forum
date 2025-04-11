@@ -48,7 +48,7 @@ export const apiUserPrivacy = (success) => {
 }
 
 export const apiUserPrivacySave = (data, loadingRef) => {
-    loadingRef.value = false
+    loadingRef.value = true
     post("/api/user/save-privacy",data,() => {
         ElMessage.success(`隐私信息修改成功`)
         loadingRef.value = false
@@ -96,3 +96,11 @@ export const apiUserNotificationDelete = (id,success) =>
 
 export const apiUserNotificationDeleteAll = (success) =>
     get(`api/notification/delete-all`,success)
+
+export const apiUserList = (page, size, success) =>
+    get(`/api/admin/user/list?page=${page}&size=${size}`, success)
+
+export const apiGetUserDetail = (id, success) =>
+    get(`api/admin/user/detail?id=${id}`,success)
+
+export const apiUserSave = (data, success) => post(`api/admin/user/save`, data, success)

@@ -4,6 +4,7 @@ import com.example.entity.RestBean;
 import com.example.entity.dto.Account;
 import com.example.entity.vo.response.AuthorizeVO;
 import com.example.filter.JwtAuthorizeFilter;
+import com.example.filter.RequestLogFilter;
 import com.example.service.AccountService;
 import com.example.utils.Const;
 import com.example.utils.JWTUtils;
@@ -34,89 +35,88 @@ import java.io.PrintWriter;
 public class SecurityConfiguration {
 
     @Resource
-    private JWTUtils jwtUtils;
+    JwtAuthorizeFilter jwtAuthenticationFilter;
 
     @Resource
-    private JwtAuthorizeFilter filter;
+    RequestLogFilter requestLogFilter;
 
     @Resource
-    private AccountService service;
+    JWTUtils utils;
+
+    @Resource
+    AccountService service;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
                 .authorizeHttpRequests(conf -> conf
-                        .requestMatchers("/api/auth/**","/error","/images/**").permitAll()
+                        .requestMatchers("/api/auth/**", "/error").permitAll()
+                        .requestMatchers("/images/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole(Const.ROLE_ADMIN)
                         .anyRequest().hasAnyRole(Const.ROLE_DEFAULT, Const.ROLE_ADMIN)
                 )
-                .formLogin(conf ->  conf
+                .formLogin(conf -> conf
                         .loginProcessingUrl("/api/auth/login")
-                        .successHandler(this::onAuthenticationSuccess)
-                        .failureHandler(this::onAuthenticationFailure)
+                        .failureHandler(this::handleProcess)
+                        .successHandler(this::handleProcess)
+                        .permitAll()
                 )
                 .logout(conf -> conf
                         .logoutUrl("/api/auth/logout")
                         .logoutSuccessHandler(this::onLogoutSuccess)
                 )
-                .addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(conf -> conf
+                        .accessDeniedHandler(this::handleProcess)
+                        .authenticationEntryPoint(this::handleProcess)
+                )
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(conf -> conf
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
-                .exceptionHandling(conf -> conf
-                        .authenticationEntryPoint(this::onUnauthorizedAccess)
-                        .accessDeniedHandler(this::AccessDenied)
-                )
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(requestLogFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, RequestLogFilter.class)
                 .build();
     }
 
-    public void onAuthenticationSuccess(HttpServletRequest request,
-                                        HttpServletResponse response,
-                                        Authentication authentication) throws IOException {
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-        User user = (User) authentication.getPrincipal();
-        Account account = service.findAccountByUsernameOrEmail(user.getUsername());
-        String token = jwtUtils.createJWT(user,account.getId(),account.getUsername());   //创建唯一JWT令牌
-        AuthorizeVO vo = account.asViewObject(AuthorizeVO.class , v -> {
-            v.setToken(token);
-            v.setExpires(jwtUtils.ExpireTime());
-        });
-        response.getWriter().write(RestBean.success(vo).asJsonString());
-    }
-
-    public void onAuthenticationFailure(HttpServletRequest request,
-                                        HttpServletResponse response,
-                                        AuthenticationException exception) throws IOException {
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-        response.getWriter().write(RestBean.unauthorized(exception.getMessage()).asJsonString());
-    }
-
-    public void onLogoutSuccess(HttpServletRequest request,
-                                HttpServletResponse response,
-                                Authentication authentication) throws IOException {
-        response.setContentType("application/json;charset=UTF-8");
-        PrintWriter out = response.getWriter();
-        String authorize = request.getHeader("Authorization");
-        if(jwtUtils.invalidateJwt(authorize)){
-            out.write(RestBean.success().asJsonString());
-        }else{
-            out.write(RestBean.failure(400,"退出登录失败").asJsonString());
+    private void handleProcess(HttpServletRequest request,
+                               HttpServletResponse response,
+                               Object exceptionOrAuthentication) throws IOException {
+        response.setContentType("application/json;charset=utf-8");
+        PrintWriter writer = response.getWriter();
+        if(exceptionOrAuthentication instanceof AccessDeniedException exception) {
+            writer.write(RestBean
+                    .accessDenied(exception.getMessage()).asJsonString());
+        } else if(exceptionOrAuthentication instanceof Exception exception) {
+            writer.write(RestBean
+                    .unauthorized(exception.getMessage()).asJsonString());
+        } else if(exceptionOrAuthentication instanceof Authentication authentication){
+            User user = (User) authentication.getPrincipal();
+            Account account = service.findAccountByUsernameOrEmail(user.getUsername());
+            if(account.isBanned()) {
+                writer.write(RestBean.accessDenied("登录失败，此账户已被封禁").asJsonString());
+                return;
+            }
+            String jwt = utils.createJWT(user, account.getUsername(), account.getId());
+            if(jwt == null) {
+                writer.write(RestBean.accessDenied("登录验证频繁，请稍后再试").asJsonString());
+            } else {
+                AuthorizeVO vo = account.asViewObject(AuthorizeVO.class, o -> o.setToken(jwt));
+                vo.setExpires(utils.ExpireTime());
+                writer.write(RestBean.success(vo).asJsonString());
+            }
         }
     }
 
-    public void AccessDenied(HttpServletRequest request,
-                             HttpServletResponse response,
-                             AccessDeniedException accessDeniedException) throws IOException {
+    private void onLogoutSuccess(HttpServletRequest request,
+                                 HttpServletResponse response,
+                                 Authentication authentication) throws IOException {
         response.setContentType("application/json;charset=utf-8");
-        response.getWriter().write(RestBean.accessDenied(accessDeniedException.getMessage()).asJsonString());
-    }
-
-    public void onUnauthorizedAccess(HttpServletRequest request,
-                                     HttpServletResponse response,
-                                     AuthenticationException exception) throws IOException {
-        response.setContentType("application/json;charset=utf-8");
-        response.getWriter().write(RestBean.unauthorized(exception.getMessage()).asJsonString());
+        PrintWriter writer = response.getWriter();
+        String authorization = request.getHeader("Authorization");
+        if(utils.invalidateJwt(authorization)) {
+            writer.write(RestBean.success("退出登录成功").asJsonString());
+            return;
+        }
+        writer.write(RestBean.failure(400, "退出登录失败").asJsonString());
     }
 }
